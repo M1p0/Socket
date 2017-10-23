@@ -2,12 +2,12 @@
 #include <iostream> 
 #include <windows.h>
 #include <process.h>
-
+#pragma comment(lib,"Ws2_32.lib")
 using namespace std;
 
 int main()
 {
-
+Loop:
     const int BUF_SIZE = 64;
     WSADATA wsd;            //WSADATA变量  
     SOCKET sServer;        //服务器套接字  
@@ -19,7 +19,7 @@ int main()
     if (WSAStartup(MAKEWORD(2, 2), &wsd) != 0) //初始化socket
     {
         cout << "WSAStartup failed!" << endl;
-        return -1;
+        goto Loop;
     }
 
     sServer = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -27,7 +27,7 @@ int main()
     {
         cout << "Socket failed!" << endl;
         WSACleanup();
-        return -1;
+        goto Loop;
     }
 
     addrServ.sin_family = AF_INET;
@@ -39,7 +39,7 @@ int main()
         cout << "bind failed!" << endl;
         closesocket(sServer);   //关闭套接字  
         WSACleanup();           //释放套接字资源;  
-        return -1;
+        goto Loop;
     }
 
     retVal = listen(sServer, 5);
@@ -48,7 +48,7 @@ int main()
         cout << "listen failed!" << endl;
         closesocket(sServer);   //关闭套接字  
         WSACleanup();           //释放套接字资源;  
-        return -1;
+        goto Loop;
     }
 
     sockaddr_in addrClient;
@@ -59,7 +59,7 @@ int main()
         cout << "Accept failed!" << endl;
         closesocket(sServer);   //关闭套接字  
         WSACleanup();           //释放套接字资源
-        return -1;
+        goto Loop;
     }
 
     while (true)
@@ -72,19 +72,15 @@ int main()
             closesocket(sClient);
             closesocket(sServer);
             WSACleanup();
-            return -1;
+            goto Loop;
         }
         if (buf[0] == '0')
             break;
         cout << "客户端发送的数据: " << buf << endl;
 
-        cout << "向客户端发送数据: ";
-        cin >> sendBuf;
-
-        send(sClient, sendBuf, strlen(sendBuf), 0);
     }
     closesocket(sClient);
     closesocket(sServer);
     WSACleanup();
-    return 0;
+    goto Loop;
 }
