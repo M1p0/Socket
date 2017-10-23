@@ -2,6 +2,7 @@
 #include <iostream> 
 #include <windows.h>
 #include <process.h>
+#include <string>
 #pragma comment(lib,"Ws2_32.lib")
 using namespace std;
 
@@ -16,6 +17,7 @@ Loop:
     char buf[BUF_SIZE];  //接收客户端数据  
     char sendBuf[BUF_SIZE];//发送给客户端的数据  
     int retVal;         //返回值
+    string cmd;
     if (WSAStartup(MAKEWORD(2, 2), &wsd) != 0) //初始化socket
     {
         cout << "WSAStartup failed!" << endl;
@@ -76,7 +78,9 @@ Loop:
         }
         if (buf[0] == '0')
             break;
-        cout << "客户端发送的数据: " << buf << endl;
+        cmd = buf;
+        cout << "commond: " << cmd << endl;
+        
 
     }
     closesocket(sClient);
