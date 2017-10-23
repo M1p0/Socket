@@ -61,8 +61,7 @@ int main(int argc, char* argv[])
         //RecvLine(sHost, bufRecv);
         ZeroMemory(bufRecv, BUF_SIZE);
         recv(sHost, bufRecv, BUF_SIZE, 0); // 接收服务器端的数据， 只接收5个字符
-        cout << endl << "从服务器接收数据：" << bufRecv;
-        cout << "\n";
+        cout << endl << "从服务器接收数据：" << bufRecv << endl;
     }
     //退出
     closesocket(sHost); //关闭套接字
