@@ -53,6 +53,7 @@ Loop:
         goto Loop;
     }
 
+
     sockaddr_in addrClient;
     int addrClientlen = sizeof(addrClient);
     sClient = accept(sServer, (sockaddr*)&addrClient, &addrClientlen);
@@ -63,6 +64,8 @@ Loop:
         WSACleanup();           //释放套接字资源
         goto Loop;
     }
+    else
+        cout << "connected" << endl;
 
     while (true)
     {
