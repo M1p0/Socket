@@ -1,5 +1,6 @@
 #include <winsock2.h>
 #include <iostream>
+#pragma comment(lib,"Ws2_32.lib")
 using namespace std;
 BOOL RecvLine(SOCKET s, char* buf); //读取一行数据
 
@@ -13,7 +14,7 @@ int main(int argc, char* argv[])
     char buf[BUF_SIZE]; //接收数据缓冲区
     char bufRecv[BUF_SIZE];
     int retVal; //返回值
-    //初始化套结字动态库
+                //初始化套结字动态库
     if (WSAStartup(MAKEWORD(2, 2), &wsd) != 0)
     {
         cout << "WSAStartup failed!" << endl;
@@ -60,11 +61,11 @@ int main(int argc, char* argv[])
         }
         //RecvLine(sHost, bufRecv);
         ZeroMemory(bufRecv, BUF_SIZE);
-        recv(sHost, bufRecv, BUF_SIZE, 0); // 接收服务器端的数据， 只接收5个字符
-        cout << endl << "从服务器接收数据：" << bufRecv << endl;
     }
     //退出
     closesocket(sHost); //关闭套接字
     WSACleanup(); //释放套接字资源
     return 0;
 }
+
+
