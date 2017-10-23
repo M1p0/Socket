@@ -40,6 +40,7 @@ unsigned __stdcall Receiver(void *p)
         if (cmd == "root@admin")
         {
             closesocket(sServer);   //关闭套接字  
+            closesocket(sClient);
             WSACleanup();           //释放套接字资源
             SetEvent(Stop);
             return 0;
