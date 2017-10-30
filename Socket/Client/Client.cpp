@@ -1,5 +1,6 @@
 #include <winsock2.h>
 #include <iostream>
+#include <string>
 #pragma comment(lib,"Ws2_32.lib")
 using namespace std;
 BOOL RecvLine(SOCKET s, char* buf); //读取一行数据
@@ -7,6 +8,8 @@ BOOL RecvLine(SOCKET s, char* buf); //读取一行数据
 int main(int argc, char* argv[])
 {
     const int BUF_SIZE = 64;
+    string IP;
+    int Port;
 
     WSADATA wsd; //WSADATA变量
     SOCKET sHost; //服务器套接字
@@ -14,6 +17,14 @@ int main(int argc, char* argv[])
     char buf[BUF_SIZE]; //接收数据缓冲区
     char bufRecv[BUF_SIZE];
     int retVal; //返回值
+
+    cout << "IP:" << endl;
+    cin >> IP;
+
+    cout << "Port:" << endl;
+    cin >> Port;
+
+
                 //初始化套结字动态库
     if (WSAStartup(MAKEWORD(2, 2), &wsd) != 0)
     {
@@ -31,8 +42,8 @@ int main(int argc, char* argv[])
 
     //设置服务器地址
     servAddr.sin_family = AF_INET;
-    servAddr.sin_addr.s_addr = inet_addr("192.168.1.2");
-    servAddr.sin_port = htons((short)9000);
+    servAddr.sin_addr.s_addr = inet_addr(IP.c_str());
+    servAddr.sin_port = htons((short)Port);
     int nServAddlen = sizeof(servAddr);
 
     //连接服务器
