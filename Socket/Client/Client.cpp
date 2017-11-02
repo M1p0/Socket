@@ -28,6 +28,7 @@ unsigned __stdcall Receiver(void *p)
             cout << endl;
             cout << "Received:" << bufRecv << endl;
         }
+        Sleep(1);
     }
 
 
@@ -105,6 +106,7 @@ int main(int argc, char* argv[])
         }
         //RecvLine(sHost, bufRecv);
         ZeroMemory(bufRecv, BUF_SIZE);
+        Sleep(1);
     }
     //ÍË³ö
     closesocket(sHost); //¹Ø±ÕÌ×½Ó×Ö

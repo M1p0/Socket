@@ -48,7 +48,7 @@ unsigned __stdcall Forward(void *p)
             MsgQueue.pop();
         }
         mtx.unlock();
-
+        Sleep(1);
     }
     return 0;
 }
@@ -108,7 +108,6 @@ unsigned __stdcall Receiver(void *p)
             SetEvent(Stop);
             return 0;
         }
-
         if (Msg == "show")
         {
             vector<Cli_Info>::iterator it;
@@ -116,8 +115,8 @@ unsigned __stdcall Receiver(void *p)
             {
                 cout << it->ip << ":" << it->port << endl;
             }
-
         }
+        Sleep(1);
     }
     _endthreadex(0);
     return 0;
@@ -144,7 +143,7 @@ unsigned __stdcall GenRec(void *p)
             CSocket.push_back(sClient);
             Rec = (HANDLE)_beginthreadex(NULL, 0, &Receiver, NULL, 0, NULL);
         }
-
+        Sleep(1);
     }
 }
 
