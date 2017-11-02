@@ -1,31 +1,63 @@
 #include <winsock2.h>
 #include <iostream>
 #include <string>
+#include <process.h>
+#include <windows.h>
 #pragma comment(lib,"Ws2_32.lib")
 using namespace std;
-BOOL RecvLine(SOCKET s, char* buf); //读取一行数据
+
+const int BUF_SIZE = 64;
+SOCKET sHost;
+HANDLE Rec;
+int retVal; //返回值
+
+
+unsigned __stdcall Receiver(void *p)
+{
+    while (true)
+    {
+        char bufRecv[BUF_SIZE]; //接收数据缓冲区 
+        ZeroMemory(bufRecv, BUF_SIZE);
+        retVal = recv(sHost, bufRecv, BUF_SIZE, 0);
+        if (retVal == SOCKET_ERROR)
+        {
+            cout << "recv failed!" << endl;
+        }
+        else
+        {
+            cout << endl;
+            cout << "Received:" << bufRecv << endl;
+        }
+    }
+
+
+    return 0;
+
+
+};
 
 int main(int argc, char* argv[])
 {
-    const int BUF_SIZE = 64;
     string IP;
     int Port;
 
     WSADATA wsd; //WSADATA变量
-    SOCKET sHost; //服务器套接字
+
     SOCKADDR_IN servAddr; //服务器地址
     char buf[BUF_SIZE]; //接收数据缓冲区
     char bufRecv[BUF_SIZE];
-    int retVal; //返回值
-
-    cout << "IP:" << endl;
-    cin >> IP;
-
-    cout << "Port:" << endl;
-    cin >> Port;
 
 
-                //初始化套结字动态库
+    //cout << "IP:" << endl;
+    //cin >> IP;
+
+    //cout << "Port:" << endl;
+    //cin >> Port;
+    IP = "192.168.1.2";
+    Port = 9000;
+
+
+    //初始化套结字动态库
     if (WSAStartup(MAKEWORD(2, 2), &wsd) != 0)
     {
         cout << "WSAStartup failed!" << endl;
@@ -56,11 +88,12 @@ int main(int argc, char* argv[])
         WSACleanup(); //释放套接字资源
         return -1;
     }
+    Rec = (HANDLE)_beginthreadex(NULL, 0, &Receiver, NULL, 0, NULL);
     while (true)
     {
         //向服务器发送数据
         ZeroMemory(buf, BUF_SIZE);
-        cout << "向服务器发送数据:  ";
+        cout << "Send:  ";
         cin >> buf;
         retVal = send(sHost, buf, strlen(buf), 0);
         if (SOCKET_ERROR == retVal)

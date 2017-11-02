@@ -14,14 +14,14 @@ HANDLE Stop;
 SOCKET sServer;        //服务器套接字  
 SOCKET sClient;        //客户端套接字  
 int retVal;         //返回值
-
+int CliNum=0;  //Client数量
 
 
 
 unsigned __stdcall Receiver(void *p)
 {
 
-    string cmd;
+    string msg;
     char buf[BUF_SIZE];  //接收客户端数据  
     while (true)
     {
@@ -30,14 +30,16 @@ unsigned __stdcall Receiver(void *p)
         if (retVal == SOCKET_ERROR)
         {
             cout << "recv failed!" << endl;
+            --CliNum;
             _endthreadex(-1);
         }
+        ++CliNum;
         if (buf[0] == '0')
             break;
-        cmd = buf;
-        cout << "receive: " << cmd << endl;
+        msg = buf;
+        cout << "receive: " << msg << endl;
 
-        if (cmd == "root@admin")
+        if (msg == "root@admin")
         {
             closesocket(sServer);   //关闭套接字  
             WSACleanup();           //释放套接字资源
@@ -45,7 +47,7 @@ unsigned __stdcall Receiver(void *p)
             return 0;
         }
     }
-
+    --CliNum;
     _endthreadex(0);
     return 0;
 }
@@ -115,6 +117,11 @@ int main()
     }
     Gen = (HANDLE)_beginthreadex(NULL, 0, &GenRec, NULL, 0, NULL);
     Stop = CreateEvent(NULL, TRUE, FALSE, FALSE);
+
+    while (1)
+    {
+        cout << CliNum << endl;
+    }
     WaitForSingleObject(Stop, INFINITE);
 
 }
