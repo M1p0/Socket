@@ -16,13 +16,12 @@ struct Cli_Info
 };
 
 std::mutex mtx;
-CRITICAL_SECTION gSection;
 const int BUF_SIZE = 64;
-
 HANDLE Rec;
 HANDLE Gen;
-HANDLE Stop;
 HANDLE Fwd;
+HANDLE Stop;
+HANDLE Ender;
 SOCKET sServer;        //服务器套接字  
 SOCKET sClient;        //客户端套接字  
 int retVal;         //返回值
@@ -75,6 +74,13 @@ unsigned __stdcall Receiver(void *p)
 
     while (true)
     {
+
+        if (WaitForSingleObject(Ender, 0) == WAIT_OBJECT_0)
+        {
+            cout << "Receiver stopped" << endl;
+            _endthreadex(0);
+        }
+
         ZeroMemory(buf, BUF_SIZE);
         retVal = recv(Client, buf, BUF_SIZE, 0);
         if (retVal == SOCKET_ERROR)
@@ -151,7 +157,9 @@ int main()
 {
     WSADATA wsd;            //WSADATA变量  
     SOCKADDR_IN addrServ;      //服务器地址  
-    InitializeCriticalSection(&gSection);
+    Stop = CreateEvent(NULL, TRUE, FALSE, FALSE);
+    Ender = CreateEvent(NULL, TRUE, FALSE, FALSE);
+
     if (WSAStartup(MAKEWORD(2, 2), &wsd) != 0) //初始化socket
     {
         cout << "WSAStartup failed!" << endl;
@@ -187,8 +195,16 @@ int main()
     }
     Gen = (HANDLE)_beginthreadex(NULL, 0, &GenRec, NULL, 0, NULL);
     Fwd = (HANDLE)_beginthreadex(NULL, 0, &Forward, NULL, 0, NULL);
-    Stop = CreateEvent(NULL, TRUE, FALSE, FALSE);
-
+    string cmd;
+    while (cin>>cmd)
+    {
+        if (cmd == "stop")
+            SetEvent(Ender);
+        else if (cmd == "start")
+            ResetEvent(Ender);
+        Sleep(1);
+    }
     WaitForSingleObject(Stop, INFINITE);
+
 
 }
