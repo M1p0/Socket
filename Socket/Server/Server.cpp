@@ -61,7 +61,7 @@ unsigned __stdcall Receiver(void *p)
     SOCKET Client = sClient;
     char buf[BUF_SIZE];  //接收客户端数据 
 
-    struct sockaddr_in Sa_In;
+    SOCKADDR_IN Sa_In;
     int len = sizeof(Sa_In);
     if (!getpeername(Client, (struct sockaddr *)&Sa_In, &len))
     {
@@ -183,6 +183,7 @@ int main()
         cout << "bind failed!" << endl;
         closesocket(sServer);   //关闭套接字  
         WSACleanup();           //释放套接字资源;  
+        retVal = 0;
         return -1;
     }
     retVal = listen(sServer, 5);
@@ -191,12 +192,13 @@ int main()
         cout << "listen failed!" << endl;
         closesocket(sServer);   //关闭套接字  
         WSACleanup();           //释放套接字资源;  
+        retVal = 0;
         return -1;
     }
     Gen = (HANDLE)_beginthreadex(NULL, 0, &GenRec, NULL, 0, NULL);
     Fwd = (HANDLE)_beginthreadex(NULL, 0, &Forward, NULL, 0, NULL);
     string cmd;
-    while (cin>>cmd)
+    while (cin >> cmd)
     {
         if (cmd == "stop")
             SetEvent(Ender);
