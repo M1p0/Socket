@@ -8,7 +8,7 @@ using namespace std;
 
 const int BUF_SIZE = 64;
 SOCKET sHost;
-int retVal; //返回值
+int retVal=0; //返回值
 string IP;
 
 unsigned __stdcall Command(void *p)
@@ -47,13 +47,13 @@ unsigned __stdcall Command(void *p)
         return -1;
     }
 
-
     while (true)
     {
         //向服务器发送数据
         ZeroMemory(buf, BUF_SIZE);
-        cout << "Send:  ";
-        cin >> buf;
+        cout << "Send:";
+        cin.getline(buf, BUF_SIZE);//不能使用cin,cin不能输入空格!
+        strcat(buf, "\r\n");//结束符
         retVal = send(sHost, buf, strlen(buf), 0);
         if (SOCKET_ERROR == retVal)
         {
@@ -62,7 +62,6 @@ unsigned __stdcall Command(void *p)
             WSACleanup(); //释放套接字资源
             return -1;
         }
-
         ZeroMemory(bufRecv, BUF_SIZE);
         retVal = recv(sHost, bufRecv, BUF_SIZE, 0);
         if (retVal == SOCKET_ERROR)
@@ -74,14 +73,14 @@ unsigned __stdcall Command(void *p)
             cout << endl;
             cout << "Received:" << bufRecv << endl;
         }
-
+        ZeroMemory(buf, BUF_SIZE);
+        ZeroMemory(bufRecv, BUF_SIZE);
         Sleep(1);
     }
     //退出
     closesocket(sHost); //关闭套接字
     WSACleanup(); //释放套接字资源
     return 0;
-
 }
 
 
