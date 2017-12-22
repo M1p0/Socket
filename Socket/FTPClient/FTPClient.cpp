@@ -11,6 +11,19 @@ SOCKET sHost;
 int retVal=0; //返回值
 string IP;
 
+int SendMsg(SOCKET sHost,char* buf)
+{
+    retVal = send(sHost, buf, strlen(buf), 0);
+    cout << strlen(buf) << endl;
+    if (SOCKET_ERROR == retVal)
+    {
+        cout << "send failed!" << endl;
+        closesocket(sHost); //关闭套接字
+        WSACleanup(); //释放套接字资源
+        return -1;
+    }
+}
+
 unsigned __stdcall Command(void *p)
 {
     const int Port = 21;  //command port
@@ -54,14 +67,9 @@ unsigned __stdcall Command(void *p)
         cout << "Send:";
         cin.getline(buf, BUF_SIZE);//不能使用cin,cin不能输入空格!
         strcat(buf, "\r\n");//结束符
-        retVal = send(sHost, buf, strlen(buf), 0);
-        if (SOCKET_ERROR == retVal)
-        {
-            cout << "send failed!" << endl;
-            closesocket(sHost); //关闭套接字
-            WSACleanup(); //释放套接字资源
-            return -1;
-        }
+
+        SendMsg(sHost, buf);
+
         ZeroMemory(bufRecv, BUF_SIZE);
         retVal = recv(sHost, bufRecv, BUF_SIZE, 0);
         if (retVal == SOCKET_ERROR)

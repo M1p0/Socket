@@ -94,7 +94,7 @@ int main(int argc, char* argv[])
     {
         //向服务器发送数据
         ZeroMemory(buf, BUF_SIZE);
-        cout << "Send:  ";
+        cout << "Send:";
         cin.getline(buf, BUF_SIZE);
         retVal = send(sHost, buf, strlen(buf), 0);
         if (SOCKET_ERROR == retVal)
@@ -106,7 +106,7 @@ int main(int argc, char* argv[])
         }
         //RecvLine(sHost, bufRecv);
         ZeroMemory(bufRecv, BUF_SIZE);
-        Sleep(1);
+        Sleep(100);
     }
     //退出
     closesocket(sHost); //关闭套接字
