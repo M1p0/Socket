@@ -1,7 +1,7 @@
 #include <winsock2.h>  
 #include <iostream> 
 #include <windows.h>
-#include <process.h>
+#include <thread>
 #include <string>
 #include <queue>
 #include <vector>
@@ -17,9 +17,6 @@ struct Cli_Info
 
 std::mutex mtx;
 const int BUF_SIZE = 64;
-HANDLE Rec;
-HANDLE Gen;
-HANDLE Fwd;
 HANDLE Stop;
 HANDLE Ender;
 SOCKET sServer;        //服务器套接字  
@@ -30,7 +27,7 @@ vector <SOCKET> CSocket;    //客户端套接字
 vector <Cli_Info> CIP;    //客户端IP
 
 
-unsigned __stdcall Forward(void *p)
+int Forward()
 {
     string Msg;
     while (true)
@@ -53,7 +50,7 @@ unsigned __stdcall Forward(void *p)
 }
 
 
-unsigned __stdcall Receiver(void *p)
+int Receiver()
 {
 
     string Msg;
@@ -78,7 +75,7 @@ unsigned __stdcall Receiver(void *p)
         if (WaitForSingleObject(Ender, 0) == WAIT_OBJECT_0)
         {
             cout << "Receiver stopped" << endl;
-            _endthreadex(0);
+            return 0;
         }
 
         ZeroMemory(buf, BUF_SIZE);
@@ -98,7 +95,7 @@ unsigned __stdcall Receiver(void *p)
                 }
             }
 
-            _endthreadex(-1);
+            return -1;
         }
         if (buf[0] == '0')
             break;
@@ -124,12 +121,11 @@ unsigned __stdcall Receiver(void *p)
         }
         Sleep(1);
     }
-    _endthreadex(0);
     return 0;
 }
 
 
-unsigned __stdcall GenRec(void *p)
+int GenRec()
 {
 
     sockaddr_in addrClient;
@@ -141,13 +137,14 @@ unsigned __stdcall GenRec(void *p)
         if (sClient == INVALID_SOCKET)
         {
             cout << "Accept failed!" << endl;
-            _endthreadex(-1);
+            return -1;
         }
         else
         {
             cout << "connected" << endl;
             CSocket.push_back(sClient);
-            Rec = (HANDLE)_beginthreadex(NULL, 0, &Receiver, NULL, 0, NULL);
+            thread Rec(Receiver);
+            Rec.detach();
         }
         Sleep(1);
     }
@@ -195,8 +192,10 @@ int main()
         retVal = 0;
         return -1;
     }
-    Gen = (HANDLE)_beginthreadex(NULL, 0, &GenRec, NULL, 0, NULL);
-    Fwd = (HANDLE)_beginthreadex(NULL, 0, &Forward, NULL, 0, NULL);
+    thread Gen(GenRec);
+    Gen.detach();
+    thread Fwd(Forward);
+    Fwd.detach();
     string cmd;
     while (cin >> cmd)
     {

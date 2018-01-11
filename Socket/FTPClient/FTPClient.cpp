@@ -1,7 +1,7 @@
 #include <winsock2.h>
 #include <iostream>
 #include <string>
-#include <process.h>
+#include <thread>
 #include <windows.h>
 #pragma comment(lib,"Ws2_32.lib")
 using namespace std;
@@ -24,7 +24,7 @@ int SendMsg(SOCKET sHost,char* buf)
     }
 }
 
-unsigned __stdcall Command(void *p)
+int Command()
 {
     const int Port = 21;  //command port
     WSADATA wsd;
@@ -95,10 +95,11 @@ unsigned __stdcall Command(void *p)
 
 int main()  //passive mode
 {   
-    HANDLE CMD;
+
     cout << "IP:" << endl;
     cin >> IP;
-    CMD = (HANDLE)_beginthreadex(NULL, 0, &Command, NULL, 0, NULL);
+    thread CMD(Command);
+    CMD.detach();
 
     while (true)
     {

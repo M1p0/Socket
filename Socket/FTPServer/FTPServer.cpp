@@ -1,12 +1,12 @@
 #include <winsock2.h>
 #include <iostream>
 #include <string>
-#include <process.h>
+#include <thread>
 #include <windows.h>
 #pragma comment(lib,"Ws2_32.lib")
 using namespace std;
 const int BUF_SIZE = 64;
-unsigned __stdcall Command(void *p)
+int Command()
 {
     const int Port = 21;//ÃüÁî¶Ë¿Ú
     int retVal;
@@ -93,10 +93,8 @@ unsigned __stdcall Command(void *p)
 
 int main()  //passive mode
 {
-    HANDLE CMD;
-    CMD = (HANDLE)_beginthreadex(NULL, 0, &Command, NULL, 0, NULL);
-    
-
+    thread CMD(Command);
+    CMD.detach();
     while (true)
     {
         Sleep(1);

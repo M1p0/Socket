@@ -1,7 +1,7 @@
 #include <winsock2.h>
 #include <iostream>
 #include <string>
-#include <process.h>
+#include <thread>
 #include <windows.h>
 #pragma comment(lib,"Ws2_32.lib")
 using namespace std;
@@ -12,7 +12,7 @@ HANDLE Rec;
 int retVal; //返回值
 
 
-unsigned __stdcall Receiver(void *p)
+int Receiver()
 {
     while (true)
     {
@@ -30,11 +30,7 @@ unsigned __stdcall Receiver(void *p)
         }
         Sleep(1);
     }
-
-
     return 0;
-
-
 };
 
 int main(int argc, char* argv[])
@@ -89,7 +85,9 @@ int main(int argc, char* argv[])
         WSACleanup(); //释放套接字资源
         return -1;
     }
-    Rec = (HANDLE)_beginthreadex(NULL, 0, &Receiver, NULL, 0, NULL);
+
+    thread Rec(Receiver);
+    Rec.detach();
     while (true)
     {
         //向服务器发送数据
