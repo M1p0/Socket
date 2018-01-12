@@ -55,11 +55,15 @@ int Receiver()
 
     string Msg;
     Cli_Info CInfo;
-    SOCKET Client = sClient;
     char buf[BUF_SIZE];  //接收客户端数据 
-
     SOCKADDR_IN Sa_In;
     int len = sizeof(Sa_In);
+    std::mutex Locker;
+
+    Locker.lock();
+    SOCKET Client = sClient;
+    Locker.unlock();
+
     if (!getpeername(Client, (struct sockaddr *)&Sa_In, &len))
     {
         CInfo.ip = inet_ntoa(Sa_In.sin_addr);
