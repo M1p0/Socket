@@ -105,6 +105,7 @@ int main(int argc, char* argv[])
         //RecvLine(sHost, bufRecv);
         ZeroMemory(bufRecv, BUF_SIZE);
         Sleep(100);
+        cin.clear();
     }
     //ÍË³ö
     closesocket(sHost); //¹Ø±ÕÌ×½Ó×Ö

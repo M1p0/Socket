@@ -1,13 +1,16 @@
-#include <winsock2.h>  
-#include <iostream> 
-#include <windows.h>
+#include <iostream>
 #include <thread>
 #include <string>
 #include <queue>
 #include <vector>
 #include <mutex>
+#include <winsock2.h>  
+#include <windows.h>
 #pragma comment(lib,"Ws2_32.lib")
 using namespace std;
+
+
+
 
 struct Cli_Info
 {
@@ -17,14 +20,17 @@ struct Cli_Info
 
 std::mutex mtx;
 const int BUF_SIZE = 64;
+queue <string> MsgQueue;  //消息队列
+vector <Cli_Info> CIP;    //客户端IP
+int retVal;         //返回值
+
+vector <SOCKET> CSocket;    //客户端套接字
 HANDLE Stop;
 HANDLE Ender;
 SOCKET sServer;        //服务器套接字  
 SOCKET sClient;        //客户端套接字  
-int retVal;         //返回值
-queue <string> MsgQueue;  //消息队列
-vector <SOCKET> CSocket;    //客户端套接字
-vector <Cli_Info> CIP;    //客户端IP
+
+
 
 
 int Forward()
@@ -67,7 +73,7 @@ int Receiver()
     if (!getpeername(Client, (struct sockaddr *)&Sa_In, &len))
     {
         CInfo.ip = inet_ntoa(Sa_In.sin_addr);
-        CInfo.port = ntohs(Sa_In.sin_port);
+        CInfo.port = ntohs(Sa_In.sin_port);  //IPV6需要使用inet_pton()
         mtx.lock();
         CIP.push_back(CInfo);
         mtx.unlock();
