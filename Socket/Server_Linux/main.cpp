@@ -46,7 +46,7 @@ int Forward()
             for (it = CSocket.begin(); it != CSocket.end(); it++)
             {
                 Msg = MsgQueue.front().c_str();
-                send(*it, Msg.c_str(), Msg.size(), 0);
+                send(*it, Msg.c_str(), Msg.size(), MSG_NOSIGNAL);
             }
             MsgQueue.pop();
         }
@@ -90,7 +90,7 @@ int Receiver()
         }
 
         memset(buf, 0, BUF_SIZE);
-        retVal = recv(Client, buf, BUF_SIZE, 0);
+        retVal = recv(Client, buf, BUF_SIZE, MSG_NOSIGNAL);
         if (retVal == -1)
         {
             cout << "recv failed!" << endl;
