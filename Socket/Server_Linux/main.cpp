@@ -106,7 +106,6 @@ int Receiver()
                     mtx_CIP.lock();
                     CIP.erase(CIP.begin() + i);
                     mtx_CIP.unlock();
-
                 }
             }
 
@@ -155,7 +154,9 @@ int GenRec()
         else
         {
             cout << "connected" << endl;
+            Mtx_Lock(mtx_CSocket);
             CSocket.push_back(sClient);
+            Mtx_Unlock(mtx_CSocket);
             thread Rec(Receiver);
             Rec.detach();
         }
