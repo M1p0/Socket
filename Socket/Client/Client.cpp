@@ -6,10 +6,19 @@
 #pragma comment(lib,"Ws2_32.lib")
 using namespace std;
 
-const int BUF_SIZE = 64;
+const int BUF_SIZE = 512;
 SOCKET sHost;
 HANDLE Rec;
 int retVal; //返回值
+
+#pragma pack(1)
+struct SPacket
+{
+    int Length;
+    char Data[BUF_SIZE];
+};
+#pragma pack()
+
 
 
 int Receiver()
@@ -17,7 +26,7 @@ int Receiver()
     while (true)
     {
         char bufRecv[BUF_SIZE]; //接收数据缓冲区 
-        ZeroMemory(bufRecv, BUF_SIZE);
+        memset(bufRecv, 0, BUF_SIZE);
         retVal = recv(sHost, bufRecv, BUF_SIZE, 0);
         if (retVal == SOCKET_ERROR)
         {
@@ -45,13 +54,13 @@ int main(int argc, char* argv[])
     char bufRecv[BUF_SIZE];
 
 
-    cout << "IP:" << endl;
-    cin >> IP;
+    //cout << "IP:" << endl;
+    //cin >> IP;
 
-    cout << "Port:" << endl;
-    cin >> Port;
-    //IP = "192.168.1.2";
-    //Port = 9000;
+    //cout << "Port:" << endl;
+    //cin >> Port;
+    IP = "172.105.211.200";
+    Port = 9000;
 
 
     //初始化套结字动态库
@@ -90,11 +99,18 @@ int main(int argc, char* argv[])
     Rec.detach();
     while (true)
     {
+        SPacket Packet_Send;
         //向服务器发送数据
-        ZeroMemory(buf, BUF_SIZE);
         cout << "Send:";
+        char buf[BUF_SIZE];
+        memset(buf, 0, BUF_SIZE);
         cin.getline(buf, BUF_SIZE);
-        retVal = send(sHost, buf, strlen(buf), 0);
+
+        memset(&Packet_Send, 0, BUF_SIZE + 4);
+        Packet_Send.Length = BUF_SIZE;
+        memcpy(Packet_Send.Data, buf, BUF_SIZE);
+        cout << "sizeof Packet:" << sizeof(Packet_Send) << endl;
+        retVal = send(sHost, (char*)&Packet_Send, BUF_SIZE + 4, 0);
         if (SOCKET_ERROR == retVal)
         {
             cout << "send failed!" << endl;
@@ -102,8 +118,6 @@ int main(int argc, char* argv[])
             WSACleanup(); //释放套接字资源
             return -1;
         }
-        //RecvLine(sHost, bufRecv);
-        ZeroMemory(bufRecv, BUF_SIZE);
         Sleep(100);
         cin.clear();
     }

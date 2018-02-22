@@ -88,7 +88,7 @@ int Receiver()
             return 0;
         }
 
-        ZeroMemory(buf, BUF_SIZE);
+        memset(buf, 0, BUF_SIZE);
         retVal = recv(Client, buf, BUF_SIZE, 0);
         if (retVal == SOCKET_ERROR)
         {

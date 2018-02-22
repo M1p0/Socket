@@ -15,15 +15,24 @@
 using namespace std;
 
 
+const int BUF_SIZE = 512;
 struct Cli_Info
 {
     string ip = "0.0.0.0";
     int port = 0;
 };
 
+#pragma pack(1)
+struct SPacket
+{
+    int Length;
+    char Data[BUF_SIZE];
+};
+#pragma pack()
+
 std::mutex mtx_CIP;
 std::mutex mtx_CSocket;
-const int BUF_SIZE = 64;
+
 queue <string> MsgQueue;  //消息队列
 vector <Cli_Info> CIP;    //客户端IP
 int retVal;         //返回值
@@ -61,7 +70,6 @@ int Receiver()
 {
     string Msg;
     Cli_Info CInfo;
-    char buf[BUF_SIZE];  //接收客户端数据 
     sockaddr_in peeraddr;  //区分in_addr
     socklen_t len = sizeof(peeraddr);
     std::mutex Locker;
@@ -82,15 +90,29 @@ int Receiver()
     }
 
     while (true)
-    {/////////////////////////////////////////////////////////
-        if (Ender.try_lock()==1)
+    {
+        if (Ender.try_lock() == 1)
         {
             cout << "Receiver stopped" << endl;
             return 0;
         }
 
-        memset(buf, 0, BUF_SIZE);
-        retVal = recv(Client, buf, BUF_SIZE, MSG_NOSIGNAL);
+        int Length;
+        char* Data;
+        retVal = recv(Client, &Length, 4, MSG_NOSIGNAL);
+
+        Data = new char[Length];
+        memset(Data, 0, BUF_SIZE + 4);
+
+        //cout << "Length:" << Length << endl;
+        retVal = recv(Client, Data, Length, MSG_NOSIGNAL);
+        //cout << "retVal = " << retVal << endl;
+
+        //for (auto i = 0; i < retVal; i++)
+        //{
+        //    printf("%02X", Data[i]);
+        //}
+
         if (retVal == -1)
         {
             cout << "recv failed!" << endl;
@@ -111,19 +133,12 @@ int Receiver()
 
             return -1;
         }
-        if (buf[0] == '0')
-            break;
-        Msg = buf;
-        cout << "receive: " << Msg << endl;
+        cout << "receive: " << Data << endl;
+        Msg = Data;
+        delete[] Data;
         MsgQueue.push(Msg);
 
 
-        if (Msg == "root@admin")
-        {
-            close(sServer);   //关闭套接字  
-            Mtx_Unlock(Stop);
-            return 0;
-        }
         if (Msg == "show")
         {
             vector<Cli_Info>::iterator it;
@@ -167,8 +182,8 @@ int GenRec()
 
 int main()
 {
-    Mtx_Init(Stop,true);
-    Mtx_Init(Ender,true);
+    Mtx_Init(Stop, true);
+    Mtx_Init(Ender, true);
     sockaddr_in addrServ;      //服务器地址  
     sServer = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
@@ -204,9 +219,9 @@ int main()
     string cmd;
     while (cin >> cmd)
     {
-        if (cmd == "stop")
+        if (cmd == "pause")
             Mtx_Unlock(Ender);
-        else if (cmd == "start")
+        else if (cmd == "continue")
             Mtx_Lock(Ender);
         sleep(1);
     }
