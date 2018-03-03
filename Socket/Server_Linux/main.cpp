@@ -32,11 +32,9 @@ struct SPacket
 
 std::mutex mtx_CIP;
 std::mutex mtx_CSocket;
-
 queue <string> MsgQueue;  //消息队列
 vector <Cli_Info> CIP;    //客户端IP
 int retVal;         //返回值
-
 vector <SOCKET> CSocket;    //客户端套接字
 std::mutex  Stop;
 std::mutex Ender;
@@ -48,7 +46,7 @@ int Forward()
     string Msg;
     while (true)
     {
-        mtx_CSocket.lock();
+        Mtx_Lock(mtx_CSocket);
         if (CSocket.size() != 0 && MsgQueue.size() != 0)
         {
             vector<SOCKET>::iterator it;
@@ -73,9 +71,9 @@ int Receiver()
     sockaddr_in peeraddr;  //区分in_addr
     socklen_t len = sizeof(peeraddr);
     std::mutex Locker;
-    Locker.lock();
+    Mtx_Lock(Locker);
     SOCKET Client = sClient;
-    Locker.unlock();
+    Mtx_Unlock(Locker);
 
     if (!getpeername(Client, (struct sockaddr *)&peeraddr, &len))
     {
@@ -84,9 +82,9 @@ int Receiver()
         CInfo.ip = peerip;
         CInfo.port = ntohs(peeraddr.sin_port);  //IPV6需要使用inet_pton()
 
-        mtx_CIP.lock();
+        Mtx_Lock(mtx_CIP);
         CIP.push_back(CInfo);
-        mtx_CIP.unlock();
+        Mtx_Unlock(mtx_CIP);
     }
 
     while (true)
@@ -113,24 +111,23 @@ int Receiver()
         //    printf("%02X", Data[i]);
         //}
 
-        if (retVal == -1)
+        //if (retVal == -1)
+        if (retVal <= 0)
         {
             cout << "recv failed!" << endl;
-
             for (unsigned int i = 0; i < CSocket.size(); i++)
             {
                 if (CSocket.at(i) == Client)
                 {
-                    mtx_CSocket.lock();
+                    Mtx_Lock(mtx_CSocket);
                     CSocket.erase(CSocket.begin() + i);
-                    mtx_CSocket.unlock();
+                    Mtx_Unlock(mtx_CSocket);
 
-                    mtx_CIP.lock();
+                    Mtx_Lock(mtx_CIP);
                     CIP.erase(CIP.begin() + i);
-                    mtx_CIP.unlock();
+                    Mtx_Unlock(mtx_CIP);
                 }
             }
-
             return -1;
         }
         cout << "receive: " << Data << endl;

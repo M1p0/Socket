@@ -31,6 +31,7 @@ int Receiver()
         if (retVal == SOCKET_ERROR)
         {
             cout << "recv failed!" << endl;
+            return -1;
         }
         else
         {
@@ -50,8 +51,6 @@ int main(int argc, char* argv[])
     WSADATA wsd; //WSADATA变量
 
     SOCKADDR_IN servAddr; //服务器地址
-    char buf[BUF_SIZE]; //接收数据缓冲区
-    char bufRecv[BUF_SIZE];
 
 
     //cout << "IP:" << endl;
@@ -59,7 +58,7 @@ int main(int argc, char* argv[])
 
     //cout << "Port:" << endl;
     //cin >> Port;
-    IP = "172.105.211.200";
+    IP = "172.105.202.158";
     Port = 9000;
 
 
