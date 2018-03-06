@@ -43,6 +43,19 @@ int Receiver()
     return 0;
 };
 
+void Certificate(SOCKET Server)
+{
+    SPacket Packet_Send;
+
+    char buf[BUF_SIZE];
+    memset(buf, 0, BUF_SIZE);
+    memcpy(buf, "root", 4);
+    memset(&Packet_Send, 0, BUF_SIZE + 4);
+    Packet_Send.Length = BUF_SIZE;
+    memcpy(Packet_Send.Data, buf, BUF_SIZE);
+    send(sHost, (char*)&Packet_Send, BUF_SIZE + 4, 0);
+}
+
 int main(int argc, char* argv[])
 {
     string IP;
@@ -58,7 +71,8 @@ int main(int argc, char* argv[])
 
     //cout << "Port:" << endl;
     //cin >> Port;
-    IP = "172.105.202.158";
+    //IP = "172.105.202.158";
+    IP = "192.168.1.7";
     Port = 9000;
 
 
@@ -96,6 +110,7 @@ int main(int argc, char* argv[])
 
     thread Rec(Receiver);
     Rec.detach();
+    Certificate(sHost);
     while (true)
     {
         SPacket Packet_Send;
@@ -117,8 +132,8 @@ int main(int argc, char* argv[])
             WSACleanup(); //释放套接字资源
             return -1;
         }
-        Sleep(100);
         cin.clear();
+        Sleep(1);
     }
     //退出
     closesocket(sHost); //关闭套接字

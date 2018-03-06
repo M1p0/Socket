@@ -41,6 +41,26 @@ std::mutex Ender;
 SOCKET sServer;        //服务器套接字  
 SOCKET sClient;        //客户端套接字  
 
+int Certificate(SOCKET Client)
+{
+    int Length;
+    recv(Client, &Length, 4, MSG_NOSIGNAL);
+    char* Passwd = new char[Length];
+    memset(Passwd, 0, BUF_SIZE + 4);
+    recv(Client, Passwd, Length, MSG_NOSIGNAL);
+
+    if (strcmp(Passwd,"root")==0)
+    {
+        delete[] Passwd;
+        return 0;
+    }
+    else
+    {
+        delete[] Passwd;
+        return -1;
+    }
+}
+
 int Forward()
 {
     string Msg;
@@ -74,6 +94,21 @@ int Receiver()
     Mtx_Lock(Locker);
     SOCKET Client = sClient;
     Mtx_Unlock(Locker);
+    
+    if (Certificate(Client)!=0)
+    {
+        for (unsigned int i = 0; i < CSocket.size(); i++)
+        {
+            if (CSocket.at(i) == Client)
+            {
+                Mtx_Lock(mtx_CSocket);
+                CSocket.erase(CSocket.begin() + i);
+                Mtx_Unlock(mtx_CSocket);
+            }
+        }
+        close(Client);
+        return -1;
+    }
 
     if (!getpeername(Client, (struct sockaddr *)&peeraddr, &len))
     {
@@ -128,6 +163,7 @@ int Receiver()
                     Mtx_Unlock(mtx_CIP);
                 }
             }
+            close(Client);
             return -1;
         }
         cout << "receive: " << Data << endl;
