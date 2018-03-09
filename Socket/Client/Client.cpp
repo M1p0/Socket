@@ -71,8 +71,8 @@ int main(int argc, char* argv[])
 
     //cout << "Port:" << endl;
     //cin >> Port;
-    //IP = "172.105.202.158";
-    IP = "192.168.1.7";
+    IP = "172.105.202.158";
+    //IP = "192.168.1.7";
     Port = 9000;
 
 

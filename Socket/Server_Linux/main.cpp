@@ -16,6 +16,7 @@ using namespace std;
 
 
 const int BUF_SIZE = 512;
+const int MAX_SIZE = 1024;
 struct Cli_Info
 {
     string ip = "0.0.0.0";
@@ -45,18 +46,16 @@ int Certificate(SOCKET Client)
 {
     int Length;
     recv(Client, &Length, 4, MSG_NOSIGNAL);
-    char* Passwd = new char[Length];
-    memset(Passwd, 0, BUF_SIZE + 4);
+    char Passwd[1024];
+    memset(Passwd, 0, 1024);
     recv(Client, Passwd, Length, MSG_NOSIGNAL);
 
-    if (strcmp(Passwd,"root")==0)
+    if (strcmp(Passwd, "root") == 0)
     {
-        delete[] Passwd;
         return 0;
     }
     else
     {
-        delete[] Passwd;
         return -1;
     }
 }
@@ -94,8 +93,8 @@ int Receiver()
     Mtx_Lock(Locker);
     SOCKET Client = sClient;
     Mtx_Unlock(Locker);
-    
-    if (Certificate(Client)!=0)
+
+    if (Certificate(Client) != 0)
     {
         for (unsigned int i = 0; i < CSocket.size(); i++)
         {
@@ -131,11 +130,9 @@ int Receiver()
         }
 
         int Length;
-        char* Data;
+        char Data[MAX_SIZE];
+        memset(Data, 0,MAX_SIZE);
         retVal = recv(Client, &Length, 4, MSG_NOSIGNAL);
-
-        Data = new char[Length];
-        memset(Data, 0, BUF_SIZE + 4);
 
         //cout << "Length:" << Length << endl;
         retVal = recv(Client, Data, Length, MSG_NOSIGNAL);
@@ -168,7 +165,6 @@ int Receiver()
         }
         cout << "receive: " << Data << endl;
         Msg = Data;
-        delete[] Data;
         MsgQueue.push(Msg);
 
 
@@ -190,7 +186,6 @@ int GenRec()
 
     sockaddr_in addrClient;
     socklen_t addrClientlen = sizeof(addrClient);
-
     while (true)
     {
         sClient = accept(sServer, (sockaddr*)&addrClient, &addrClientlen);
