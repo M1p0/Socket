@@ -61,7 +61,8 @@
   <ImportGroup Label="PropertySheets" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>../Include_Linux/usr/include;../Include_Linux/usr/local/include;$(IncludePath)</IncludePath>
+    <IncludePath>../Include_Linux/usr/include;../Include_Linux/usr/local/include;..\Lib;$(IncludePath)</IncludePath>
+    <LibraryPath>..\Lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />

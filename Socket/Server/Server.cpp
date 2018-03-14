@@ -4,9 +4,9 @@
 #include <queue>
 #include <vector>
 #include <mutex>
-#include <winsock2.h>  
+#include <MSocket.h>
 #include <windows.h>
-#pragma comment(lib,"Ws2_32.lib")
+#pragma comment(lib,"Lib.lib")
 using namespace std;
 
 
@@ -19,7 +19,6 @@ struct Cli_Info
 };
 
 std::mutex mtx;
-const int BUF_SIZE = 64;
 queue <string> MsgQueue;  //消息队列
 vector <Cli_Info> CIP;    //客户端IP
 int retVal;         //返回值
