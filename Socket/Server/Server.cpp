@@ -1,3 +1,5 @@
+#undef  WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
 #include <iostream>
 #include <thread>
 #include <string>
@@ -6,11 +8,9 @@
 #include <mutex>
 #include <MSocket.h>
 #include <windows.h>
+#include <MyEvent.h>
 #pragma comment(lib,"Lib.lib")
 using namespace std;
-
-
-
 
 struct Cli_Info
 {
@@ -21,14 +21,32 @@ struct Cli_Info
 std::mutex mtx;
 queue <string> MsgQueue;  //消息队列
 vector <Cli_Info> CIP;    //客户端IP
-int retVal;         //返回值
 
 vector <SOCKET> CSocket;    //客户端套接字
 HANDLE Stop;
 HANDLE Ender;
 SOCKET sServer;        //服务器套接字  
 SOCKET sClient;        //客户端套接字  
+MSocket sock;
 
+
+int Certificate(SOCKET Client)
+{
+    int Length;
+    sock.Recv(Client, (char*)&Length, 4);
+    char Passwd[1024];
+    memset(Passwd, 0, 1024);
+    sock.Recv(Client, Passwd, Length);
+
+    if (strcmp(Passwd, "root") == 0)
+    {
+        return 0;
+    }
+    else
+    {
+        return -1;
+    }
+}
 
 
 
@@ -44,7 +62,15 @@ int Forward()
             for (it = CSocket.begin(); it != CSocket.end(); it++)
             {
                 Msg = MsgQueue.front().c_str();
-                send(*it, Msg.c_str(), Msg.size(), 0);
+                Packet Packet_Send;
+                memset(&Packet_Send, 0, BUF_SIZE + 4);
+                Packet_Send.Length = BUF_SIZE;
+                memcpy(Packet_Send.Data, Msg.c_str(), Msg.length());
+                int retVal = sock.Send(*it, (char*)&Packet_Send, BUF_SIZE + 4);
+                if (retVal == -1)
+                {
+                    cout << "Forward Failed" << endl;
+                }
             }
             MsgQueue.pop();
         }
@@ -86,10 +112,12 @@ int Receiver()
             cout << "Receiver stopped" << endl;
             return 0;
         }
-
+        int retVal = 0;
         memset(buf, 0, BUF_SIZE);
-        retVal = recv(Client, buf, BUF_SIZE, 0);
-        if (retVal == SOCKET_ERROR)
+        int Length = 0;
+        retVal = sock.Recv(Client, (char*)&Length, 4);
+        retVal = sock.Recv(Client, buf, Length);
+        if (retVal == -1)
         {
             cout << "recv failed!" << endl;
 
@@ -103,7 +131,6 @@ int Receiver()
                     mtx.unlock();
                 }
             }
-
             return -1;
         }
         if (buf[0] == '0')
@@ -116,7 +143,6 @@ int Receiver()
         if (Msg == "root@admin")
         {
             closesocket(sServer);   //关闭套接字  
-            WSACleanup();           //释放套接字资源
             SetEvent(Stop);
             return 0;
         }
@@ -136,13 +162,9 @@ int Receiver()
 
 int GenRec()
 {
-
-    sockaddr_in addrClient;
-    int addrClientlen = sizeof(addrClient);
-
     while (true)
     {
-        sClient = accept(sServer, (sockaddr*)&addrClient, &addrClientlen);
+        sClient = sock.Accept(sServer);
         if (sClient == INVALID_SOCKET)
         {
             cout << "Accept failed!" << endl;
@@ -161,12 +183,10 @@ int GenRec()
 
 int main()
 {
-    WSADATA wsd;            //WSADATA变量  
-    SOCKADDR_IN addrServ;      //服务器地址  
     Stop = CreateEvent(NULL, TRUE, FALSE, FALSE);
     Ender = CreateEvent(NULL, TRUE, FALSE, FALSE);
 
-    if (WSAStartup(MAKEWORD(2, 2), &wsd) != 0) //初始化socket
+    if (sock.Init() != 0) //初始化socket
     {
         cout << "WSAStartup failed!" << endl;
         return -1;
@@ -176,29 +196,22 @@ int main()
     if (sServer == INVALID_SOCKET)
     {
         cout << "Socket failed!" << endl;
-        WSACleanup();
         return -1;
     }
 
-    addrServ.sin_family = AF_INET;
-    addrServ.sin_port = htons(9000);
-    addrServ.sin_addr.s_addr = INADDR_ANY;
-    retVal = ::bind(sServer, (LPSOCKADDR)&addrServ, sizeof(addrServ));
-    if (retVal == SOCKET_ERROR)
+    int retVal = sock.Bind(sServer, 9000, AF_INET);
+    if (retVal == -1)
     {
         cout << "bind failed!" << endl;
         closesocket(sServer);   //关闭套接字  
-        WSACleanup();           //释放套接字资源;  
         retVal = 0;
         return -1;
     }
-    retVal = listen(sServer, 5);
+    retVal = sock.Listen(sServer, 5);
     if (retVal == SOCKET_ERROR)
     {
         cout << "listen failed!" << endl;
         closesocket(sServer);   //关闭套接字  
-        WSACleanup();           //释放套接字资源;  
-        retVal = 0;
         return -1;
     }
     thread Gen(GenRec);
@@ -215,6 +228,4 @@ int main()
         Sleep(1);
     }
     WaitForSingleObject(Stop, INFINITE);
-
-
 }

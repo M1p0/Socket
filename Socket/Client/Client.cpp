@@ -13,21 +13,23 @@ MSocket sock;
 
 int Receiver()
 {
+
     int retVal = 0;
     while (true)
     {
-        char bufRecv[BUF_SIZE]; //接收数据缓冲区 
-        memset(bufRecv, 0, BUF_SIZE);
-        retVal = sock.Recv(sHost, bufRecv, BUF_SIZE);
+        int Length = 0;
+        char Data[BUF_SIZE]; //接收数据缓冲区 
+        memset(Data, 0, BUF_SIZE);
+        sock.Recv(sHost, (char*)&Length, 4);
+        retVal = sock.Recv(sHost, Data, Length);
         if (retVal == -1)
         {
-            cout << "recv failed!" << endl;
             return -1;
         }
         else
         {
             cout << endl;
-            cout << "Received:" << bufRecv << endl;
+            cout << "Received:" << Data << endl;
         }
         Sleep(1);
     }
@@ -47,23 +49,19 @@ void Certificate(SOCKET Server)
     sock.Send(sHost, (char*)&Packet_Send, BUF_SIZE + 4);
 }
 
-int main(int argc, char* argv[])
+int main()
 {
-    int retVal; //返回值
+    int retVal;
     string IP;
     int Port;
 
-
-
     //cout << "IP:" << endl;
     //cin >> IP;
-
     //cout << "Port:" << endl;
     //cin >> Port;
-    IP = "172.104.85.54";
-    //IP = "192.168.1.2";
+    //IP = "172.104.85.54";
+    IP = "192.168.1.7";
     Port = 9000;
-
 
     if (sock.Init() != 0)      //初始化套结字动态库
     {

@@ -10,12 +10,11 @@
 #include <queue>
 #include <vector>
 #include <mutex>
-#include "MyEvent.h"
+#include <MyEvent.h>
+#include <MSocket.h>
 #define SOCKET int
 using namespace std;
 
-
-const int BUF_SIZE = 512;
 const int MAX_SIZE = 1024;
 struct Cli_Info
 {
@@ -23,13 +22,7 @@ struct Cli_Info
     int port = 0;
 };
 
-#pragma pack(1)
-struct SPacket
-{
-    int Length;
-    char Data[BUF_SIZE];
-};
-#pragma pack()
+
 
 std::mutex mtx_CIP;
 std::mutex mtx_CSocket;
@@ -72,7 +65,12 @@ int Forward()
             for (it = CSocket.begin(); it != CSocket.end(); it++)
             {
                 Msg = MsgQueue.front().c_str();
-                send(*it, Msg.c_str(), Msg.size(), MSG_NOSIGNAL);
+                Packet Packet_Send;
+                memset(&Packet_Send, 0, BUF_SIZE + 4);
+                Packet_Send.Length = BUF_SIZE;
+                memcpy(Packet_Send.Data, Msg.c_str(), Msg.length());
+                send(*it, (char*)&Packet_Send, BUF_SIZE + 4, MSG_NOSIGNAL);
+                cout << sizeof(Packet_Send) << endl;
             }
             MsgQueue.pop();
         }
@@ -131,7 +129,7 @@ int Receiver()
 
         int Length;
         char Data[MAX_SIZE];
-        memset(Data, 0,MAX_SIZE);
+        memset(Data, 0, MAX_SIZE);
         retVal = recv(Client, &Length, 4, MSG_NOSIGNAL);
 
         //cout << "Length:" << Length << endl;
