@@ -16,14 +16,6 @@
 using namespace std;
 
 const int MAX_SIZE = 1024;
-struct Cli_Info
-{
-    string ip = "0.0.0.0";
-    int port = 0;
-};
-
-
-
 std::mutex mtx_CIP;
 std::mutex mtx_CSocket;
 queue <string> MsgQueue;  //消息队列
@@ -34,6 +26,7 @@ std::mutex  Stop;
 std::mutex Ender;
 SOCKET sServer;        //服务器套接字  
 SOCKET sClient;        //客户端套接字  
+MSocket sock;
 
 int Certificate(SOCKET Client)
 {
@@ -107,16 +100,16 @@ int Receiver()
         return -1;
     }
 
-    if (!getpeername(Client, (struct sockaddr *)&peeraddr, &len))
+    if (sock.Getpeername(Client, CInfo) == 0)
     {
-        char peerip[18];
-        inet_ntop(AF_INET, &peeraddr.sin_addr, peerip, sizeof(peerip));
-        CInfo.ip = peerip;
-        CInfo.port = ntohs(peeraddr.sin_port);  //IPV6需要使用inet_pton()
-
         Mtx_Lock(mtx_CIP);
         CIP.push_back(CInfo);
         Mtx_Unlock(mtx_CIP);
+    }
+    else
+    {
+        cout << "Getpeername failed" << endl;
+        return -1;
     }
 
     while (true)
@@ -127,21 +120,12 @@ int Receiver()
             return 0;
         }
 
-        int Length;
+        int Length=0;
         char Data[MAX_SIZE];
         memset(Data, 0, MAX_SIZE);
         retVal = recv(Client, &Length, 4, MSG_NOSIGNAL);
-
-        //cout << "Length:" << Length << endl;
         retVal = recv(Client, Data, Length, MSG_NOSIGNAL);
-        //cout << "retVal = " << retVal << endl;
 
-        //for (auto i = 0; i < retVal; i++)
-        //{
-        //    printf("%02X", Data[i]);
-        //}
-
-        //if (retVal == -1)
         if (retVal <= 0)
         {
             cout << "recv failed!" << endl;

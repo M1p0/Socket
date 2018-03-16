@@ -12,22 +12,16 @@
 #pragma comment(lib,"Lib.lib")
 using namespace std;
 
-struct Cli_Info
-{
-    string ip = "0.0.0.0";
-    int port = 0;
-};
 
 std::mutex mtx_CIP;
 std::mutex mtx_CSocket;
 queue <string> MsgQueue;  //消息队列
 vector <Cli_Info> CIP;    //客户端IP
-
 vector <SOCKET> CSocket;    //客户端套接字
-std::mutex  Stop;
+std::mutex Stop;
 std::mutex Ender;
-SOCKET sServer;        //服务器套接字  
-SOCKET sClient;        //客户端套接字  
+SOCKET sServer;        //服务器套接字
+SOCKET sClient;        //客户端套接字
 MSocket sock;
 
 
@@ -87,14 +81,11 @@ int Receiver()
     string Msg;
     Cli_Info CInfo;
     char buf[BUF_SIZE];  //接收客户端数据 
-    SOCKADDR_IN Sa_In;
-    int len = sizeof(Sa_In);
     std::mutex Locker;
 
     Mtx_Lock(Locker);
     SOCKET Client = sClient;
     Mtx_Unlock(Locker);
-
 
     if (Certificate(Client) != 0)
     {
@@ -111,19 +102,20 @@ int Receiver()
         return -1;
     }
 
-
-    if (!getpeername(Client, (struct sockaddr *)&Sa_In, &len))
+    if (sock.Getpeername(Client, CInfo)==0)
     {
-        CInfo.ip = inet_ntoa(Sa_In.sin_addr);
-        CInfo.port = ntohs(Sa_In.sin_port);  //IPV6需要使用inet_pton()
         Mtx_Lock(mtx_CIP);
         CIP.push_back(CInfo);
         Mtx_Unlock(mtx_CIP);
     }
+    else
+    {
+        cout << "Getpeername failed" << endl;
+        return -1;
+    }
 
     while (true)
     {
-
         if (Ender.try_lock() == 1)
         {
             cout << "Receiver stopped" << endl;
@@ -137,7 +129,6 @@ int Receiver()
         if (retVal == -1)
         {
             cout << "recv failed!" << endl;
-
             for (unsigned int i = 0; i < CSocket.size(); i++)
             {
                 if (CSocket.at(i) == Client)
@@ -158,7 +149,6 @@ int Receiver()
         Msg = buf;
         cout << "receive: " << Msg << endl;
         MsgQueue.push(Msg);
-
 
         if (Msg == "show")
         {
@@ -187,7 +177,9 @@ int GenRec()
         else
         {
             cout << "connected" << endl;
+            Mtx_Lock(mtx_CSocket);
             CSocket.push_back(sClient);
+            Mtx_Unlock(mtx_CSocket);
             thread Rec(Receiver);
             Rec.detach();
         }

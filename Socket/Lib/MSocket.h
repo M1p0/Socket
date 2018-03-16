@@ -28,8 +28,13 @@ struct Packet
     int Length;
     char Data[BUF_SIZE];
 };
-#pragma pack()
 
+struct Cli_Info
+{
+    std::string ip = "0.0.0.0";
+    int port = 0;
+};
+#pragma pack()
 
 class MSocket
 {
@@ -43,7 +48,7 @@ public:
     int Bind(SOCKET s, int Port, int Family = AF_INET);
     int Listen(SOCKET s, int Backlog);
     SOCKET Accept(SOCKET s);
-
+    int Getpeername(SOCKET Client, Cli_Info &CInfo);
 private:
 #ifdef _WIN32
     WSADATA wsd;
