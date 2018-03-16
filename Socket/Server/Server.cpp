@@ -18,13 +18,14 @@ struct Cli_Info
     int port = 0;
 };
 
-std::mutex mtx;
+std::mutex mtx_CIP;
+std::mutex mtx_CSocket;
 queue <string> MsgQueue;  //消息队列
 vector <Cli_Info> CIP;    //客户端IP
 
 vector <SOCKET> CSocket;    //客户端套接字
-HANDLE Stop;
-HANDLE Ender;
+std::mutex  Stop;
+std::mutex Ender;
 SOCKET sServer;        //服务器套接字  
 SOCKET sClient;        //客户端套接字  
 MSocket sock;
@@ -32,7 +33,7 @@ MSocket sock;
 
 int Certificate(SOCKET Client)
 {
-    int Length;
+    int Length = 0;
     sock.Recv(Client, (char*)&Length, 4);
     char Passwd[1024];
     memset(Passwd, 0, 1024);
@@ -55,7 +56,7 @@ int Forward()
     string Msg;
     while (true)
     {
-        mtx.lock();
+        Mtx_Lock(mtx_CSocket);
         if (CSocket.size() != 0 && MsgQueue.size() != 0)
         {
             vector<SOCKET>::iterator it;
@@ -74,7 +75,7 @@ int Forward()
             }
             MsgQueue.pop();
         }
-        mtx.unlock();
+        Mtx_Unlock(mtx_CSocket);
         Sleep(1);
     }
     return 0;
@@ -83,7 +84,6 @@ int Forward()
 
 int Receiver()
 {
-
     string Msg;
     Cli_Info CInfo;
     char buf[BUF_SIZE];  //接收客户端数据 
@@ -91,23 +91,40 @@ int Receiver()
     int len = sizeof(Sa_In);
     std::mutex Locker;
 
-    Locker.lock();
+    Mtx_Lock(Locker);
     SOCKET Client = sClient;
-    Locker.unlock();
+    Mtx_Unlock(Locker);
+
+
+    if (Certificate(Client) != 0)
+    {
+        for (unsigned int i = 0; i < CSocket.size(); i++)
+        {
+            if (CSocket.at(i) == Client)
+            {
+                Mtx_Lock(mtx_CSocket);
+                CSocket.erase(CSocket.begin() + i);
+                Mtx_Unlock(mtx_CSocket);
+            }
+        }
+        closesocket(Client);
+        return -1;
+    }
+
 
     if (!getpeername(Client, (struct sockaddr *)&Sa_In, &len))
     {
         CInfo.ip = inet_ntoa(Sa_In.sin_addr);
         CInfo.port = ntohs(Sa_In.sin_port);  //IPV6需要使用inet_pton()
-        mtx.lock();
+        Mtx_Lock(mtx_CIP);
         CIP.push_back(CInfo);
-        mtx.unlock();
+        Mtx_Unlock(mtx_CIP);
     }
 
     while (true)
     {
 
-        if (WaitForSingleObject(Ender, 0) == WAIT_OBJECT_0)
+        if (Ender.try_lock() == 1)
         {
             cout << "Receiver stopped" << endl;
             return 0;
@@ -125,10 +142,13 @@ int Receiver()
             {
                 if (CSocket.at(i) == Client)
                 {
-                    mtx.lock();
+                    Mtx_Lock(mtx_CSocket);
                     CSocket.erase(CSocket.begin() + i);
+                    Mtx_Unlock(mtx_CSocket);
+
+                    Mtx_Lock(mtx_CIP);
                     CIP.erase(CIP.begin() + i);
-                    mtx.unlock();
+                    Mtx_Unlock(mtx_CIP);
                 }
             }
             return -1;
@@ -140,12 +160,6 @@ int Receiver()
         MsgQueue.push(Msg);
 
 
-        if (Msg == "root@admin")
-        {
-            closesocket(sServer);   //关闭套接字  
-            SetEvent(Stop);
-            return 0;
-        }
         if (Msg == "show")
         {
             vector<Cli_Info>::iterator it;
@@ -183,8 +197,8 @@ int GenRec()
 
 int main()
 {
-    Stop = CreateEvent(NULL, TRUE, FALSE, FALSE);
-    Ender = CreateEvent(NULL, TRUE, FALSE, FALSE);
+    Mtx_Init(Stop, true);
+    Mtx_Init(Ender, true);
 
     if (sock.Init() != 0) //初始化socket
     {
@@ -222,10 +236,11 @@ int main()
     while (cin >> cmd)
     {
         if (cmd == "stop")
-            SetEvent(Ender);
+            Mtx_Unlock(Ender);
         else if (cmd == "start")
-            ResetEvent(Ender);
+            Mtx_Lock(Ender);
         Sleep(1);
     }
-    WaitForSingleObject(Stop, INFINITE);
+    Mtx_Wait(Stop);
+    return 0;
 }

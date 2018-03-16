@@ -74,7 +74,7 @@ int Forward()
             }
             MsgQueue.pop();
         }
-        mtx_CSocket.unlock();
+        Mtx_Unlock(mtx_CSocket);
         sleep(1);
     }
     return 0;
@@ -174,7 +174,7 @@ int Receiver()
                 cout << it->ip << ":" << it->port << endl;
             }
         }
-        sleep(1);
+        Sleep(1);
     }
     return 0;
 }
