@@ -60,7 +60,7 @@ int main()
     //cout << "Port:" << endl;
     //cin >> Port;
     //IP = "172.104.85.54";
-    IP = "192.168.1.7";
+    IP = "127.0.0.1";
     Port = 9000;
 
     if (sock.Init() != 0)      //初始化套结字动态库
@@ -77,7 +77,7 @@ int main()
     }
 
     retVal = sock.Connect(sHost, IP.c_str(), Port);      //连接服务器
-    if (retVal!=0)
+    if (retVal != 0)
     {
         return -1;
     }
@@ -98,7 +98,7 @@ int main()
         Packet_Send.Length = BUF_SIZE;
         memcpy(Packet_Send.Data, buf, BUF_SIZE);
         cout << "sizeof Packet:" << sizeof(Packet_Send) << endl;
-        retVal = sock.Send(sHost, (char*)&Packet_Send, BUF_SIZE+4);
+        retVal = sock.Send(sHost, (char*)&Packet_Send, BUF_SIZE + 4);
         if (SOCKET_ERROR == retVal)
         {
             cout << "send failed!" << endl;

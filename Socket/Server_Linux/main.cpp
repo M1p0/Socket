@@ -1,8 +1,3 @@
-#include <netinet/in.h> //套接字地址结构
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <unistd.h>
 #include <iostream>
 #include <thread>
 #include <string>
@@ -31,10 +26,10 @@ MSocket sock;
 int Certificate(SOCKET Client)
 {
     int Length;
-    recv(Client, &Length, 4, MSG_NOSIGNAL);
+    sock.Recv(Client, (char*)&Length, 4);
     char Passwd[1024];
     memset(Passwd, 0, 1024);
-    recv(Client, Passwd, Length, MSG_NOSIGNAL);
+    sock.Recv(Client, Passwd, Length);
 
     if (strcmp(Passwd, "root") == 0)
     {
@@ -62,8 +57,7 @@ int Forward()
                 memset(&Packet_Send, 0, BUF_SIZE + 4);
                 Packet_Send.Length = BUF_SIZE;
                 memcpy(Packet_Send.Data, Msg.c_str(), Msg.length());
-                send(*it, (char*)&Packet_Send, BUF_SIZE + 4, MSG_NOSIGNAL);
-                cout << sizeof(Packet_Send) << endl;
+                sock.Send(*it, (char*)&Packet_Send, BUF_SIZE + 4);
             }
             MsgQueue.pop();
         }
@@ -78,12 +72,7 @@ int Receiver()
 {
     string Msg;
     Cli_Info CInfo;
-    sockaddr_in peeraddr;  //区分in_addr
-    socklen_t len = sizeof(peeraddr);
-    std::mutex Locker;
-    Mtx_Lock(Locker);
     SOCKET Client = sClient;
-    Mtx_Unlock(Locker);
 
     if (Certificate(Client) != 0)
     {
@@ -120,11 +109,11 @@ int Receiver()
             return 0;
         }
 
-        int Length=0;
+        int Length = 0;
         char Data[MAX_SIZE];
         memset(Data, 0, MAX_SIZE);
-        retVal = recv(Client, &Length, 4, MSG_NOSIGNAL);
-        retVal = recv(Client, Data, Length, MSG_NOSIGNAL);
+        retVal = sock.Recv(Client,(char*) &Length, 4);
+        retVal = sock.Recv(Client, (char*)Data, Length);
 
         if (retVal <= 0)
         {
@@ -165,12 +154,9 @@ int Receiver()
 
 int GenRec()
 {
-
-    sockaddr_in addrClient;
-    socklen_t addrClientlen = sizeof(addrClient);
     while (true)
     {
-        sClient = accept(sServer, (sockaddr*)&addrClient, &addrClientlen);
+        sClient = sock.Accept(sServer);
         if (sClient == -1)
         {
             cout << "Accept failed!" << endl;
@@ -203,10 +189,8 @@ int main()
         close(sServer);
         return -1;
     }
-    addrServ.sin_family = AF_INET;
-    addrServ.sin_port = htons(9000);
-    addrServ.sin_addr.s_addr = INADDR_ANY;
-    retVal = ::bind(sServer, (sockaddr*)&addrServ, sizeof(addrServ));
+
+    retVal = sock.Bind(sServer,9000, AF_INET);
     if (retVal == -1)
     {
         cout << "bind failed!" << endl;
@@ -214,7 +198,7 @@ int main()
         retVal = 0;
         return -1;
     }
-    retVal = listen(sServer, 5);
+    retVal = sock.Listen(sServer, 5);
     if (retVal == -1)
     {
         cout << "listen failed!" << endl;

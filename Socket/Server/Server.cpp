@@ -15,7 +15,11 @@ using namespace std;
 
 std::mutex mtx_CIP;
 std::mutex mtx_CSocket;
+std::mutex mtx_Client;
+std::mutex mtx_MsgQue;
+std::mutex mtx_Packet;
 queue <string> MsgQueue;  //消息队列
+queue <Packet> Packet_Receive;
 vector <Cli_Info> CIP;    //客户端IP
 vector <SOCKET> CSocket;    //客户端套接字
 std::mutex Stop;
@@ -47,28 +51,26 @@ int Certificate(SOCKET Client)
 
 int Forward()
 {
-    string Msg;
     while (true)
     {
         Mtx_Lock(mtx_CSocket);
-        if (CSocket.size() != 0 && MsgQueue.size() != 0)
+        Mtx_Lock(mtx_Packet);
+        if (CSocket.size() != 0 && Packet_Receive.size() != 0)
         {
             vector<SOCKET>::iterator it;
             for (it = CSocket.begin(); it != CSocket.end(); it++)
             {
-                Msg = MsgQueue.front().c_str();
                 Packet Packet_Send;
-                memset(&Packet_Send, 0, BUF_SIZE + 4);
-                Packet_Send.Length = BUF_SIZE;
-                memcpy(Packet_Send.Data, Msg.c_str(), Msg.length());
+                Packet_Send = Packet_Receive.front();
                 int retVal = sock.Send(*it, (char*)&Packet_Send, BUF_SIZE + 4);
                 if (retVal == -1)
                 {
                     cout << "Forward Failed" << endl;
                 }
             }
-            MsgQueue.pop();
+            Packet_Receive.pop();
         }
+        Mtx_Unlock(mtx_Packet);
         Mtx_Unlock(mtx_CSocket);
         Sleep(1);
     }
@@ -78,15 +80,11 @@ int Forward()
 
 int Receiver()
 {
-    string Msg;
     Cli_Info CInfo;
     char buf[BUF_SIZE];  //接收客户端数据 
-    std::mutex Locker;
-
-    Mtx_Lock(Locker);
+    Mtx_Lock(mtx_Client);
     SOCKET Client = sClient;
-    Mtx_Unlock(Locker);
-
+    Mtx_Unlock(mtx_Client);
     if (Certificate(Client) != 0)
     {
         for (unsigned int i = 0; i < CSocket.size(); i++)
@@ -102,7 +100,7 @@ int Receiver()
         return -1;
     }
 
-    if (sock.Getpeername(Client, CInfo)==0)
+    if (sock.Getpeername(Client, CInfo) == 0)
     {
         Mtx_Lock(mtx_CIP);
         CIP.push_back(CInfo);
@@ -126,38 +124,36 @@ int Receiver()
         int Length = 0;
         retVal = sock.Recv(Client, (char*)&Length, 4);
         retVal = sock.Recv(Client, buf, Length);
-        if (retVal == -1)
+        if (!retVal)
         {
             cout << "recv failed!" << endl;
+            Mtx_Lock(mtx_CSocket);
+            Mtx_Lock(mtx_CIP);
             for (unsigned int i = 0; i < CSocket.size(); i++)
             {
                 if (CSocket.at(i) == Client)
                 {
-                    Mtx_Lock(mtx_CSocket);
                     CSocket.erase(CSocket.begin() + i);
-                    Mtx_Unlock(mtx_CSocket);
-
-                    Mtx_Lock(mtx_CIP);
                     CIP.erase(CIP.begin() + i);
-                    Mtx_Unlock(mtx_CIP);
                 }
             }
+            Mtx_Unlock(mtx_CSocket);
+            Mtx_Unlock(mtx_CIP);
             return -1;
         }
         if (buf[0] == '0')
             break;
-        Msg = buf;
-        cout << "receive: " << Msg << endl;
-        MsgQueue.push(Msg);
 
-        if (Msg == "show")
-        {
-            vector<Cli_Info>::iterator it;
-            for (it = CIP.begin(); it != CIP.end(); it++)
-            {
-                cout << it->ip << ":" << it->port << endl;
-            }
-        }
+
+        Packet PRecv;
+        memset(&PRecv, 0, sizeof(PRecv));
+        PRecv.Length = Length;
+        memcpy(PRecv.Data, buf, BUF_SIZE);
+        Mtx_Lock(mtx_Packet);
+        Packet_Receive.push(PRecv);
+        Mtx_Unlock(mtx_Packet);
+
+        cout << "receive: " << buf << endl;
         Sleep(1);
     }
     return 0;
@@ -166,6 +162,7 @@ int Receiver()
 
 int GenRec()
 {
+    int i = 0;
     while (true)
     {
         sClient = sock.Accept(sServer);
@@ -178,8 +175,14 @@ int GenRec()
         {
             cout << "connected" << endl;
             Mtx_Lock(mtx_CSocket);
+            Mtx_Lock(mtx_Client);
             CSocket.push_back(sClient);
+            Mtx_Unlock(mtx_Client);
             Mtx_Unlock(mtx_CSocket);
+            //thread Rec[1024];
+            //Rec[i] = thread(Receiver);
+            //Rec[i].detach();
+            //i++;
             thread Rec(Receiver);
             Rec.detach();
         }
@@ -213,7 +216,7 @@ int main()
         retVal = 0;
         return -1;
     }
-    retVal = sock.Listen(sServer, 5);
+    retVal = sock.Listen(sServer, 10000);
     if (retVal == SOCKET_ERROR)
     {
         cout << "listen failed!" << endl;
