@@ -13,9 +13,11 @@ using namespace std;
 const int MAX_SIZE = 1024;
 std::mutex mtx_CIP;
 std::mutex mtx_CSocket;
-queue <string> MsgQueue;  //消息队列
+std::mutex mtx_Client;
+std::mutex mtx_MsgQue;
+std::mutex mtx_Packet;
+queue <Packet> Packet_Receive;
 vector <Cli_Info> CIP;    //客户端IP
-int retVal;         //返回值
 vector <SOCKET> CSocket;    //客户端套接字
 std::mutex  Stop;
 std::mutex Ender;
@@ -47,20 +49,23 @@ int Forward()
     while (true)
     {
         Mtx_Lock(mtx_CSocket);
-        if (CSocket.size() != 0 && MsgQueue.size() != 0)
+        Mtx_Lock(mtx_Packet);
+        if (CSocket.size() != 0 && Packet_Receive.size() != 0)
         {
             vector<SOCKET>::iterator it;
             for (it = CSocket.begin(); it != CSocket.end(); it++)
             {
-                Msg = MsgQueue.front().c_str();
                 Packet Packet_Send;
-                memset(&Packet_Send, 0, BUF_SIZE + 4);
-                Packet_Send.Length = BUF_SIZE;
-                memcpy(Packet_Send.Data, Msg.c_str(), Msg.length());
-                sock.Send(*it, (char*)&Packet_Send, BUF_SIZE + 4);
+                Packet_Send = Packet_Receive.front();
+                int retVal = sock.Send(*it, (char*)&Packet_Send, BUF_SIZE + 4);
+                if (retVal == -1)
+                {
+                    cout << "Forward Failed" << endl;
+                }
             }
-            MsgQueue.pop();
+            Packet_Receive.pop();
         }
+        Mtx_Unlock(mtx_Packet);
         Mtx_Unlock(mtx_CSocket);
         sleep(1);
     }
@@ -108,45 +113,42 @@ int Receiver()
             cout << "Receiver stopped" << endl;
             return 0;
         }
-
+        int retVal = 0;
         int Length = 0;
-        char Data[MAX_SIZE];
-        memset(Data, 0, MAX_SIZE);
+        char buf[BUF_SIZE];  //接收客户端数据 
+        memset(buf, 0, BUF_SIZE);
         retVal = sock.Recv(Client,(char*) &Length, 4);
-        retVal = sock.Recv(Client, (char*)Data, Length);
+        retVal = sock.Recv(Client, (char*)buf, Length);
 
         if (retVal <= 0)
         {
             cout << "recv failed!" << endl;
+            Mtx_Lock(mtx_CSocket);
+            Mtx_Lock(mtx_CIP);
             for (unsigned int i = 0; i < CSocket.size(); i++)
             {
                 if (CSocket.at(i) == Client)
                 {
-                    Mtx_Lock(mtx_CSocket);
                     CSocket.erase(CSocket.begin() + i);
-                    Mtx_Unlock(mtx_CSocket);
-
-                    Mtx_Lock(mtx_CIP);
                     CIP.erase(CIP.begin() + i);
-                    Mtx_Unlock(mtx_CIP);
                 }
             }
+            Mtx_Unlock(mtx_CSocket);
+            Mtx_Unlock(mtx_CIP);
             close(Client);
             return -1;
         }
-        cout << "receive: " << Data << endl;
-        Msg = Data;
-        MsgQueue.push(Msg);
+        if (buf[0] == '0')
+            break;
+        Packet PRecv;
+        memset(&PRecv, 0, sizeof(PRecv));
+        PRecv.Length = Length;
+        memcpy(PRecv.Data, buf, BUF_SIZE);
+        Mtx_Lock(mtx_Packet);
+        Packet_Receive.push(PRecv);
+        Mtx_Unlock(mtx_Packet);
 
-
-        if (Msg == "show")
-        {
-            vector<Cli_Info>::iterator it;
-            for (it = CIP.begin(); it != CIP.end(); it++)
-            {
-                cout << it->ip << ":" << it->port << endl;
-            }
-        }
+        cout << "receive: " << buf << endl;
         Sleep(1);
     }
     return 0;
@@ -166,7 +168,9 @@ int GenRec()
         {
             cout << "connected" << endl;
             Mtx_Lock(mtx_CSocket);
+            Mtx_Lock(mtx_Client);
             CSocket.push_back(sClient);
+            Mtx_Unlock(mtx_Client);
             Mtx_Unlock(mtx_CSocket);
             thread Rec(Receiver);
             Rec.detach();
@@ -178,6 +182,7 @@ int GenRec()
 
 int main()
 {
+    int retVal = 0;
     Mtx_Init(Stop, true);
     Mtx_Init(Ender, true);
     sockaddr_in addrServ;      //服务器地址  
