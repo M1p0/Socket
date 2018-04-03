@@ -8,7 +8,9 @@
 #define BUF_SIZE 1024
 
 #ifdef _WIN32
-
+#undef  WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 #include <winsock2.h>
 #pragma comment(lib,"Ws2_32.lib")
 

@@ -1,36 +1,35 @@
-#undef  WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
 #include <iostream>
 #include <thread>
 #include <string>
+#include <string.h>
 #include <queue>
 #include <vector>
 #include <mutex>
-#include <MSocket.h>
-#include <windows.h>
 #include <MyEvent.h>
+#include <MSocket.h>
+#define SOCKET int
+#define sleep(x) Sleep(x)
+#define close(x) closesocket(x)
 #pragma comment(lib,"Lib.lib")
 using namespace std;
 
-
 std::mutex mtx_CIP;
 std::mutex mtx_CSocket;
-std::mutex mtx_Client;
+std::mutex mtx_sClient;
 std::mutex mtx_MsgQue;
 std::mutex mtx_Packet;
 queue <Packet> Packet_Receive;
 vector <Cli_Info> CIP;    //客户端IP
 vector <SOCKET> CSocket;    //客户端套接字
-std::mutex Stop;
+std::mutex  Stop;
 std::mutex Ender;
-SOCKET sServer;        //服务器套接字
-SOCKET sClient;        //客户端套接字
+SOCKET sServer;        //服务器套接字  
+SOCKET sClient;        //客户端套接字  
 MSocket sock;
-
 
 int Certificate(SOCKET Client)
 {
-    int Length = 0;
+    int Length;
     sock.Recv(Client, (char*)&Length, 4);
     char Passwd[1024];
     memset(Passwd, 0, 1024);
@@ -46,10 +45,9 @@ int Certificate(SOCKET Client)
     }
 }
 
-
-
 int Forward()
 {
+    string Msg;
     while (true)
     {
         Mtx_Lock(mtx_CSocket);
@@ -61,7 +59,7 @@ int Forward()
             {
                 Packet Packet_Send;
                 Packet_Send = Packet_Receive.front();
-                int retVal = sock.Send(*it, (char*)&Packet_Send, BUF_SIZE + 4);
+                int retVal = sock.Send(*it, (char*)&Packet_Send, BUF_SIZE + 4); //阻塞式send 待修改
                 if (retVal == -1)
                 {
                     cout << "Forward Failed" << endl;
@@ -71,7 +69,7 @@ int Forward()
         }
         Mtx_Unlock(mtx_Packet);
         Mtx_Unlock(mtx_CSocket);
-        Sleep(1);
+        sleep(1);
     }
     return 0;
 }
@@ -79,22 +77,24 @@ int Forward()
 
 int Receiver()
 {
+    string Msg;
     Cli_Info CInfo;
-    Mtx_Lock(mtx_Client);
+    Mtx_Lock(mtx_sClient);
     SOCKET Client = sClient;
-    Mtx_Unlock(mtx_Client);
+    Mtx_Unlock(mtx_sClient);
+
     if (Certificate(Client) != 0)
     {
+        Mtx_Lock(mtx_CSocket);
         for (unsigned int i = 0; i < CSocket.size(); i++)
         {
             if (CSocket.at(i) == Client)
             {
-                Mtx_Lock(mtx_CSocket);
                 CSocket.erase(CSocket.begin() + i);
-                Mtx_Unlock(mtx_CSocket);
             }
         }
-        closesocket(Client);
+        Mtx_Unlock(mtx_CSocket);
+        close(Client);
         return -1;
     }
 
@@ -118,11 +118,12 @@ int Receiver()
             return 0;
         }
         int retVal = 0;
+        int Length = 0;
         char buf[BUF_SIZE];  //接收客户端数据 
         memset(buf, 0, BUF_SIZE);
-        int Length = 0;
         retVal = sock.Recv(Client, (char*)&Length, 4);
-        retVal = sock.Recv(Client, buf, Length);
+        retVal = sock.Recv(Client, (char*)buf, Length);
+
         if (retVal <= 0)
         {
             cout << "recv failed!" << endl;
@@ -138,6 +139,7 @@ int Receiver()
             }
             Mtx_Unlock(mtx_CSocket);
             Mtx_Unlock(mtx_CIP);
+            close(Client);
             return -1;
         }
         if (buf[0] == '0')
@@ -156,14 +158,12 @@ int Receiver()
     return 0;
 }
 
-
 int GenRec()
 {
-    int i = 0;
     while (true)
     {
         sClient = sock.Accept(sServer);
-        if (sClient == INVALID_SOCKET)
+        if (sClient == -1)
         {
             cout << "Accept failed!" << endl;
             return -1;
@@ -172,48 +172,46 @@ int GenRec()
         {
             cout << "connected" << endl;
             Mtx_Lock(mtx_CSocket);
-            Mtx_Lock(mtx_Client);
+            Mtx_Lock(mtx_sClient);
             CSocket.push_back(sClient);
-            Mtx_Unlock(mtx_Client);
+            Mtx_Unlock(mtx_sClient);
             Mtx_Unlock(mtx_CSocket);
             thread Rec(Receiver);
             Rec.detach();
         }
-        Sleep(1);
+        sleep(1);
     }
 }
 
+
 int main()
 {
+    int retVal = 0;
     Mtx_Init(Stop, true);
     Mtx_Init(Ender, true);
-
-    if (sock.Init() != 0) //初始化socket
-    {
-        cout << "WSAStartup failed!" << endl;
-        return -1;
-    }
-
     sServer = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    if (sServer == INVALID_SOCKET)
+    CSocket.reserve(1000);
+    if (sServer == -1)
     {
         cout << "Socket failed!" << endl;
+        close(sServer);
         return -1;
     }
 
-    int retVal = sock.Bind(sServer, 9000, AF_INET);
+    retVal = sock.Bind(sServer, 9000, AF_INET);
     if (retVal == -1)
     {
         cout << "bind failed!" << endl;
-        closesocket(sServer);   //关闭套接字  
+        close(sServer);   //关闭套接字    
         retVal = 0;
         return -1;
     }
-    retVal = sock.Listen(sServer, 1024);
-    if (retVal == SOCKET_ERROR)
+    retVal = sock.Listen(sServer, 5);
+    if (retVal == -1)
     {
         cout << "listen failed!" << endl;
-        closesocket(sServer);   //关闭套接字  
+        close(sServer);   //关闭套接字  
+        retVal = 0;
         return -1;
     }
     thread Gen(GenRec);
@@ -221,14 +219,17 @@ int main()
     thread Fwd(Forward);
     Fwd.detach();
     string cmd;
+
     while (cin >> cmd)
     {
-        if (cmd == "stop")
+        if (cmd == "pause")
             Mtx_Unlock(Ender);
-        else if (cmd == "start")
+        else if (cmd == "continue")
             Mtx_Lock(Ender);
-        Sleep(1);
+        sleep(1);
     }
+
     Mtx_Wait(Stop);
     return 0;
 }
+

@@ -13,7 +13,7 @@ using namespace std;
 const int MAX_SIZE = 1024;
 std::mutex mtx_CIP;
 std::mutex mtx_CSocket;
-std::mutex mtx_Client;
+std::mutex mtx_sClient;
 std::mutex mtx_MsgQue;
 std::mutex mtx_Packet;
 queue <Packet> Packet_Receive;
@@ -168,9 +168,9 @@ int GenRec()
         {
             cout << "connected" << endl;
             Mtx_Lock(mtx_CSocket);
-            Mtx_Lock(mtx_Client);
+            Mtx_Lock(mtx_sClient);
             CSocket.push_back(sClient);
-            Mtx_Unlock(mtx_Client);
+            Mtx_Unlock(mtx_sClient);
             Mtx_Unlock(mtx_CSocket);
             thread Rec(Receiver);
             Rec.detach();
@@ -185,7 +185,6 @@ int main()
     int retVal = 0;
     Mtx_Init(Stop, true);
     Mtx_Init(Ender, true);
-    sockaddr_in addrServ;      //·þÎñÆ÷µØÖ·  
     sServer = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     if (sServer == -1)
@@ -216,6 +215,7 @@ int main()
     thread Fwd(Forward);
     Fwd.detach();
     string cmd;
+
     while (cin >> cmd)
     {
         if (cmd == "pause")
