@@ -1,7 +1,6 @@
 #include <iostream>
 #include <thread>
 #include <string>
-#include <string.h>
 #include <queue>
 #include <vector>
 #include <mutex>
@@ -10,7 +9,6 @@
 #define SOCKET int
 using namespace std;
 
-const int MAX_SIZE = 1024;
 std::mutex mtx_CIP;
 std::mutex mtx_CSocket;
 std::mutex mtx_sClient;
@@ -57,7 +55,7 @@ int Forward()
             {
                 Packet Packet_Send;
                 Packet_Send = Packet_Receive.front();
-                int retVal = sock.Send(*it, (char*)&Packet_Send, BUF_SIZE + 4);
+                int retVal = sock.Send(*it, (char*)&Packet_Send, BUF_SIZE + 4); //阻塞式send 待修改
                 if (retVal == -1)
                 {
                     cout << "Forward Failed" << endl;
@@ -77,19 +75,21 @@ int Receiver()
 {
     string Msg;
     Cli_Info CInfo;
+    Mtx_Lock(mtx_sClient);
     SOCKET Client = sClient;
+    Mtx_Unlock(mtx_sClient);
 
     if (Certificate(Client) != 0)
     {
+        Mtx_Lock(mtx_CSocket);
         for (unsigned int i = 0; i < CSocket.size(); i++)
         {
             if (CSocket.at(i) == Client)
             {
-                Mtx_Lock(mtx_CSocket);
                 CSocket.erase(CSocket.begin() + i);
-                Mtx_Unlock(mtx_CSocket);
             }
         }
+        Mtx_Unlock(mtx_CSocket);
         close(Client);
         return -1;
     }
@@ -117,7 +117,7 @@ int Receiver()
         int Length = 0;
         char buf[BUF_SIZE];  //接收客户端数据 
         memset(buf, 0, BUF_SIZE);
-        retVal = sock.Recv(Client,(char*) &Length, 4);
+        retVal = sock.Recv(Client, (char*)&Length, 4);
         retVal = sock.Recv(Client, (char*)buf, Length);
 
         if (retVal <= 0)
@@ -186,7 +186,7 @@ int main()
     Mtx_Init(Stop, true);
     Mtx_Init(Ender, true);
     sServer = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-
+    CSocket.reserve(1000);
     if (sServer == -1)
     {
         cout << "Socket failed!" << endl;
@@ -194,7 +194,7 @@ int main()
         return -1;
     }
 
-    retVal = sock.Bind(sServer,9000, AF_INET);
+    retVal = sock.Bind(sServer, 9000, AF_INET);
     if (retVal == -1)
     {
         cout << "bind failed!" << endl;

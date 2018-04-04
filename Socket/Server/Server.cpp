@@ -1,13 +1,11 @@
 #include <iostream>
 #include <thread>
 #include <string>
-#include <string.h>
 #include <queue>
 #include <vector>
 #include <mutex>
 #include <MyEvent.h>
 #include <MSocket.h>
-#define SOCKET int
 #define sleep(x) Sleep(x)
 #define close(x) closesocket(x)
 #pragma comment(lib,"Lib.lib")
