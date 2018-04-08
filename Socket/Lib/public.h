@@ -1,7 +1,14 @@
 #pragma once
 #include <iostream>
 #include <string>
+#include <thread>
+#include <chrono>
+using namespace std;
+
+#ifdef _WIN32
 #include <windows.h>
+#endif
+
 
 template <class T>
 T MIN(T num1, T num2)
@@ -34,3 +41,16 @@ int Program_Mutex();  //return  (int)nRet
                       //nRet=1  program is already running
                       //nRet=-1 create mutex failed
 
+inline void MSleep(long long t,const char* unit)
+{
+    if (strcmp(unit, "s")==0)
+    {
+        std::this_thread::sleep_for(std::chrono::seconds(t));
+    }
+    else if (strcmp(unit, "ms")==0)
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(t));
+    }
+    else
+        cout << "wrong unit" << endl;
+}

@@ -1,13 +1,13 @@
 #include <iostream>
 #include <thread>
 #include <string>
+#include <string.h>
 #include <queue>
 #include <vector>
 #include <mutex>
 #include <MyEvent.h>
 #include <MSocket.h>
-#define sleep(x) Sleep(x)
-#define close(x) closesocket(x)
+#include <public.h>
 #pragma comment(lib,"Lib.lib")
 using namespace std;
 
@@ -67,7 +67,7 @@ int Forward()
         }
         Mtx_Unlock(mtx_Packet);
         Mtx_Unlock(mtx_CSocket);
-        sleep(1);
+        MSleep(1,"ms");
     }
     return 0;
 }
@@ -92,7 +92,7 @@ int Receiver()
             }
         }
         Mtx_Unlock(mtx_CSocket);
-        close(Client);
+        sock.Close(Client);
         return -1;
     }
 
@@ -137,7 +137,7 @@ int Receiver()
             }
             Mtx_Unlock(mtx_CSocket);
             Mtx_Unlock(mtx_CIP);
-            close(Client);
+            sock.Close(Client);
             return -1;
         }
         if (buf[0] == '0')
@@ -151,7 +151,7 @@ int Receiver()
         Mtx_Unlock(mtx_Packet);
 
         cout << "receive: " << buf << endl;
-        Sleep(1);
+        MSleep(1, "ms");
     }
     return 0;
 }
@@ -177,7 +177,7 @@ int GenRec()
             thread Rec(Receiver);
             Rec.detach();
         }
-        sleep(1);
+        MSleep(1,"ms");
     }
 }
 
@@ -192,7 +192,7 @@ int main()
     if (sServer == -1)
     {
         cout << "Socket failed!" << endl;
-        close(sServer);
+        sock.Close(sServer);
         return -1;
     }
 
@@ -200,7 +200,7 @@ int main()
     if (retVal == -1)
     {
         cout << "bind failed!" << endl;
-        close(sServer);   //关闭套接字    
+        sock.Close(sServer);
         retVal = 0;
         return -1;
     }
@@ -208,7 +208,7 @@ int main()
     if (retVal == -1)
     {
         cout << "listen failed!" << endl;
-        close(sServer);   //关闭套接字  
+        sock.Close(sServer);
         retVal = 0;
         return -1;
     }
@@ -224,7 +224,7 @@ int main()
             Mtx_Unlock(Ender);
         else if (cmd == "continue")
             Mtx_Lock(Ender);
-        sleep(1);
+        MSleep(1,"ms");
     }
 
     Mtx_Wait(Stop);

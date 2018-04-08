@@ -1,11 +1,13 @@
 #include <iostream>
 #include <thread>
 #include <string>
+#include <string.h>
 #include <queue>
 #include <vector>
 #include <mutex>
 #include <MyEvent.h>
 #include <MSocket.h>
+#include <public.h>
 #define SOCKET int
 using namespace std;
 
@@ -65,7 +67,7 @@ int Forward()
         }
         Mtx_Unlock(mtx_Packet);
         Mtx_Unlock(mtx_CSocket);
-        sleep(1);
+        MSleep(1, "ms");
     }
     return 0;
 }
@@ -149,7 +151,7 @@ int Receiver()
         Mtx_Unlock(mtx_Packet);
 
         cout << "receive: " << buf << endl;
-        Sleep(1);
+        MSleep(1, "ms");
     }
     return 0;
 }
@@ -175,7 +177,7 @@ int GenRec()
             thread Rec(Receiver);
             Rec.detach();
         }
-        sleep(1);
+        MSleep(1, "ms");
     }
 }
 
@@ -222,7 +224,7 @@ int main()
             Mtx_Unlock(Ender);
         else if (cmd == "continue")
             Mtx_Lock(Ender);
-        sleep(1);
+        MSleep(1, "ms");
     }
 
     Mtx_Wait(Stop);

@@ -2,9 +2,11 @@
 #define WIN32_LEAN_AND_MEAN
 #include <iostream>
 #include <string>
+#include <string.h>
 #include <thread>
 #include <windows.h>
 #include <MSocket.h>
+#include <public.h>
 #pragma comment(lib,"Lib.lib")
 using namespace std;
 
@@ -31,7 +33,7 @@ int Receiver()
             cout << endl;
             cout << "Received:" << Data << endl;
         }
-        Sleep(1);
+        MSleep(1, "ms");
     }
     return 0;
 };
@@ -106,10 +108,10 @@ int main()
             return -1;
         }
         cin.clear();
-        Sleep(1);
+        MSleep(1, "ms");
     }
     //退出
-    closesocket(sHost); //关闭套接字
+    sock.Close(sHost); //关闭套接字
     return 0;
 }
 
