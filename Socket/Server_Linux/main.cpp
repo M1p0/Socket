@@ -7,7 +7,7 @@
 #include <mutex>
 #include <MyEvent.h>
 #include <MSocket.h>
-#include <public.h>
+#include <Public.h>
 #define SOCKET int
 using namespace std;
 

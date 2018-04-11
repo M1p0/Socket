@@ -7,7 +7,7 @@
 #include <mutex>
 #include <MyEvent.h>
 #include <MSocket.h>
-#include <public.h>
+#include <Public.h>
 #pragma comment(lib,"Lib.lib")
 using namespace std;
 
@@ -120,8 +120,16 @@ int Receiver()
         char buf[BUF_SIZE];  //接收客户端数据 
         memset(buf, 0, BUF_SIZE);
         retVal = sock.Recv(Client, (char*)&Length, 4);
-        retVal = sock.Recv(Client, (char*)buf, Length);
 
+        printf("Length:0x%x  ", Length);
+
+        retVal = sock.Recv(Client, (char*)buf, Length);
+        printf("Data:");
+        for (int i = 0; i < 20; i++)
+        {
+            printf("0x%02x ", buf[i]);
+        }
+        cout << endl;
         if (retVal <= 0)
         {
             cout << "recv failed!" << endl;
@@ -150,7 +158,8 @@ int Receiver()
         Packet_Receive.push(PRecv);
         Mtx_Unlock(mtx_Packet);
 
-        cout << "receive: " << buf << endl;
+
+        //cout << "receive: " << buf << endl;
         MSleep(1, "ms");
     }
     return 0;

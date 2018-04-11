@@ -1,13 +1,16 @@
 #pragma once
 #include <iostream>
 #include <string>
+#include <string.h>
 #include <thread>
 #include <chrono>
 using namespace std;
 
 #ifdef _WIN32
 #include <windows.h>
-#endif
+#endif // _WIN32
+
+
 
 
 template <class T>

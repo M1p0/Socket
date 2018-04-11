@@ -6,7 +6,7 @@
 #include <thread>
 #include <windows.h>
 #include <MSocket.h>
-#include <public.h>
+#include <Public.h>
 #pragma comment(lib,"Lib.lib")
 using namespace std;
 
@@ -78,7 +78,6 @@ int main()
         cout << "socket failed!" << endl;
         return  -1;
     }
-
     retVal = sock.Connect(sHost, IP.c_str(), Port);      //连接服务器
     if (retVal != 0)
     {
@@ -98,6 +97,8 @@ int main()
         cin.getline(buf, BUF_SIZE);
 
         memset(&Packet_Send, 0, BUF_SIZE + 4);
+        //Packet_Send.Length = strlen(buf);
+        //memcpy(Packet_Send.Data, buf, strlen(buf));
         Packet_Send.Length = BUF_SIZE;
         memcpy(Packet_Send.Data, buf, BUF_SIZE);
         cout << "sizeof Packet:" << sizeof(Packet_Send) << endl;
