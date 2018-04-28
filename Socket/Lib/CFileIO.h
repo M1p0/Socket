@@ -1,17 +1,20 @@
 #pragma once
 #include <iostream>
 #include <cstdio>
-#include <string>
 using namespace std;
 
 class CFileIO
 {
 public:
+    CFileIO();
+    ~CFileIO();
     fpos_t FileSize;
-    int buff_size=1024*1024;  //缓存大小1MB
     void GetSize(char* szPath);
     char* Read(char* szPath, long offset, long size);
-    void  Write(char* szPath, char* szData, long offset, long Size);
+    void  Write(const char* szPath, const char* szData, long offset, long Size);
     void Copy(char* SourceFile, char* NewFile);
+private:
+    fpos_t buff_size = 1024 * 1024;  //缓存大小1MB
+    char* buffer;
 };
 

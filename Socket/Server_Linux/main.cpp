@@ -8,7 +8,6 @@
 #include <MyEvent.h>
 #include <MSocket.h>
 #include <Public.h>
-#define SOCKET int
 using namespace std;
 
 std::mutex mtx_CIP;
@@ -16,7 +15,7 @@ std::mutex mtx_CSocket;
 std::mutex mtx_sClient;
 std::mutex mtx_MsgQue;
 std::mutex mtx_Packet;
-queue <Packet> Packet_Receive;
+queue <Packet> Packet_Queue;
 vector <Cli_Info> CIP;    //客户端IP
 vector <SOCKET> CSocket;    //客户端套接字
 std::mutex  Stop;
@@ -45,25 +44,24 @@ int Certificate(SOCKET Client)
 
 int Forward()
 {
-    string Msg;
     while (true)
     {
         Mtx_Lock(mtx_CSocket);
         Mtx_Lock(mtx_Packet);
-        if (CSocket.size() != 0 && Packet_Receive.size() != 0)
+        if (Packet_Queue.size() != 0 && CSocket.size() != 0)
         {
             vector<SOCKET>::iterator it;
             for (it = CSocket.begin(); it != CSocket.end(); it++)
             {
                 Packet Packet_Send;
-                Packet_Send = Packet_Receive.front();
+                Packet_Send = Packet_Queue.front();
                 int retVal = sock.Send(*it, (char*)&Packet_Send, BUF_SIZE + 4); //阻塞式send 待修改
                 if (retVal == -1)
                 {
                     cout << "Forward Failed" << endl;
                 }
             }
-            Packet_Receive.pop();
+            Packet_Queue.pop();
         }
         Mtx_Unlock(mtx_Packet);
         Mtx_Unlock(mtx_CSocket);
@@ -92,7 +90,7 @@ int Receiver()
             }
         }
         Mtx_Unlock(mtx_CSocket);
-        close(Client);
+        sock.Close(Client);
         return -1;
     }
 
@@ -120,8 +118,16 @@ int Receiver()
         char buf[BUF_SIZE];  //接收客户端数据 
         memset(buf, 0, BUF_SIZE);
         retVal = sock.Recv(Client, (char*)&Length, 4);
-        retVal = sock.Recv(Client, (char*)buf, Length);
 
+        printf("Length:0x%x  ", Length);
+
+        retVal = sock.Recv(Client, (char*)buf, Length);
+        printf("Data:");
+        for (int i = 0; i < 20; i++)
+        {
+            printf("0x%02x ", buf[i]);
+        }
+        cout << endl;
         if (retVal <= 0)
         {
             cout << "recv failed!" << endl;
@@ -137,7 +143,7 @@ int Receiver()
             }
             Mtx_Unlock(mtx_CSocket);
             Mtx_Unlock(mtx_CIP);
-            close(Client);
+            sock.Close(Client);
             return -1;
         }
         if (buf[0] == '0')
@@ -147,8 +153,9 @@ int Receiver()
         PRecv.Length = Length;
         memcpy(PRecv.Data, buf, BUF_SIZE);
         Mtx_Lock(mtx_Packet);
-        Packet_Receive.push(PRecv);
+        Packet_Queue.push(PRecv);
         Mtx_Unlock(mtx_Packet);
+
 
         cout << "receive: " << buf << endl;
         MSleep(1, "ms");
@@ -192,7 +199,7 @@ int main()
     if (sServer == -1)
     {
         cout << "Socket failed!" << endl;
-        close(sServer);
+        sock.Close(sServer);
         return -1;
     }
 
@@ -200,7 +207,7 @@ int main()
     if (retVal == -1)
     {
         cout << "bind failed!" << endl;
-        close(sServer);   //关闭套接字    
+        sock.Close(sServer);
         retVal = 0;
         return -1;
     }
@@ -208,7 +215,7 @@ int main()
     if (retVal == -1)
     {
         cout << "listen failed!" << endl;
-        close(sServer);   //关闭套接字  
+        sock.Close(sServer);
         retVal = 0;
         return -1;
     }

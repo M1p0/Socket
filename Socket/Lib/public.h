@@ -38,11 +38,14 @@ int Match(T data, T array[], int length)   //string not included
     return 0;
 };
 
-
+#ifdef _WIN32
 int Program_Mutex();  //return  (int)nRet
                       //nRet=0  create mutex succeed
                       //nRet=1  program is already running
                       //nRet=-1 create mutex failed
+#endif // _WIN32
+
+
 
 inline void MSleep(long long t,const char* unit)
 {

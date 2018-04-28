@@ -16,7 +16,7 @@ std::mutex mtx_CSocket;
 std::mutex mtx_sClient;
 std::mutex mtx_MsgQue;
 std::mutex mtx_Packet;
-queue <Packet> Packet_Receive;
+queue <Packet> Packet_Queue;
 vector <Cli_Info> CIP;    //客户端IP
 vector <SOCKET> CSocket;    //客户端套接字
 std::mutex  Stop;
@@ -45,29 +45,28 @@ int Certificate(SOCKET Client)
 
 int Forward()
 {
-    string Msg;
     while (true)
     {
         Mtx_Lock(mtx_CSocket);
         Mtx_Lock(mtx_Packet);
-        if (CSocket.size() != 0 && Packet_Receive.size() != 0)
+        if (Packet_Queue.size() != 0 && CSocket.size() != 0)
         {
             vector<SOCKET>::iterator it;
             for (it = CSocket.begin(); it != CSocket.end(); it++)
             {
                 Packet Packet_Send;
-                Packet_Send = Packet_Receive.front();
+                Packet_Send = Packet_Queue.front();
                 int retVal = sock.Send(*it, (char*)&Packet_Send, BUF_SIZE + 4); //阻塞式send 待修改
                 if (retVal == -1)
                 {
                     cout << "Forward Failed" << endl;
                 }
             }
-            Packet_Receive.pop();
+            Packet_Queue.pop();
         }
         Mtx_Unlock(mtx_Packet);
         Mtx_Unlock(mtx_CSocket);
-        MSleep(1,"ms");
+        MSleep(1, "ms");
     }
     return 0;
 }
@@ -155,11 +154,11 @@ int Receiver()
         PRecv.Length = Length;
         memcpy(PRecv.Data, buf, BUF_SIZE);
         Mtx_Lock(mtx_Packet);
-        Packet_Receive.push(PRecv);
+        Packet_Queue.push(PRecv);
         Mtx_Unlock(mtx_Packet);
 
 
-        //cout << "receive: " << buf << endl;
+        cout << "receive: " << buf << endl;
         MSleep(1, "ms");
     }
     return 0;
@@ -186,7 +185,7 @@ int GenRec()
             thread Rec(Receiver);
             Rec.detach();
         }
-        MSleep(1,"ms");
+        MSleep(1, "ms");
     }
 }
 
@@ -233,7 +232,7 @@ int main()
             Mtx_Unlock(Ender);
         else if (cmd == "continue")
             Mtx_Lock(Ender);
-        MSleep(1,"ms");
+        MSleep(1, "ms");
     }
 
     Mtx_Wait(Stop);
