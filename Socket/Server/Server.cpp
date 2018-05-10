@@ -80,20 +80,20 @@ int Receiver()
     SOCKET Client = sClient;
     Mtx_Unlock(mtx_sClient);
 
-    if (Certificate(Client) != 0)
-    {
-        Mtx_Lock(mtx_CSocket);
-        for (unsigned int i = 0; i < CSocket.size(); i++)
-        {
-            if (CSocket.at(i) == Client)
-            {
-                CSocket.erase(CSocket.begin() + i);
-            }
-        }
-        Mtx_Unlock(mtx_CSocket);
-        sock.Close(Client);
-        return -1;
-    }
+    //if (Certificate(Client) != 0)
+    //{
+    //    Mtx_Lock(mtx_CSocket);
+    //    for (unsigned int i = 0; i < CSocket.size(); i++)
+    //    {
+    //        if (CSocket.at(i) == Client)
+    //        {
+    //            CSocket.erase(CSocket.begin() + i);
+    //        }
+    //    }
+    //    Mtx_Unlock(mtx_CSocket);
+    //    sock.Close(Client);
+    //    return -1;
+    //}
 
     if (sock.Getpeername(Client, CInfo) == 0)
     {
