@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+</head>
+<body>
+    路径: <input type="text" id="url"><br>
+    账号: <input type="text" id="user"><br>
+    密码: <input type="text" id="psw"><br>
+
+    <button id="post">get</button>
+    <div id="recv"></div>
+</body>
+<script>
+        var oUrl = document.getElementById("url");
+        var oUesr = document.getElementById("user");
+        var oPsw = document.getElementById("psw");
+        var oGet = document.getElementById("post");
+        var oRecv = document.getElementById("recv");
+
+        oGet.addEventListener('click',ajax,false);
+
+        function ajax(){
+            var url = oUrl.value;
+            var xml = new XMLHttpRequest();
+            xml.open("POST",url);
+            xml.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+            xml.send("user="+oUesr.innerHTML+"&pwd="+oPsw.innerHTML);
+            console.log("user="+oUesr.value+"&pwd="+oPsw.value)
+            xml.onreadystatechange = function(){
+                console.log("readyState:"+xml.readyState);
+                console.log("status:"+xml.status);
+                if(xml.readyState === 4 && xml.status ===200){
+                    console.log(xml.responseText);
+                    oRecv.innerHTML = xml.responseText;
+                }
+            }
+        }
+</script>
+</html>

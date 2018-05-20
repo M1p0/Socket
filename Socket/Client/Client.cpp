@@ -38,31 +38,11 @@ int Receiver()
     return 0;
 };
 
-void Certificate(SOCKET Server)
-{
-    Packet Packet_Send;
-
-    char buf[BUF_SIZE];
-    memset(buf, 0, BUF_SIZE);
-    memcpy(buf, "root", 4);
-    memset(&Packet_Send, 0, BUF_SIZE + 4);
-    Packet_Send.Length = BUF_SIZE;
-    memcpy(Packet_Send.Data, buf, BUF_SIZE);
-    sock.Send(sHost, (char*)&Packet_Send, BUF_SIZE + 4);
-}
-
 int main()
 {
     int retVal;
     string IP;
     int Port;
-
-    //cout << "IP:" << endl;
-    //cin >> IP;
-    //cout << "Port:" << endl;
-    //cin >> Port;
-    //IP = "172.104.85.54";
-    //IP = "127.0.0.1";
     IP = "192.168.1.2";
     Port = 9000;
 
@@ -86,23 +66,34 @@ int main()
 
     thread Rec(Receiver);
     Rec.detach();
-    Certificate(sHost);
-    while (true)
+    string command;
+    string cmd;
+    while (cin>>cmd)
     {
         Packet Packet_Send;
+        memset(&Packet_Send, 0, BUF_SIZE + 4);
         //向服务器发送数据
         cout << "Send:";
-        char buf[BUF_SIZE];
-        memset(buf, 0, BUF_SIZE);
-        cin.getline(buf, BUF_SIZE);
+        if (cmd=="login")
+        {
+            command = R"({"command":"login","id":"10000","password":"password"})";
+        }
+        if (cmd=="logout")
+        {
+            command = R"({"command":"logout","id":"10000"})";
+        }
+        if (cmd == "add")
+        {
+            command = R"({"command":"add_friend","id":"10000","friend_id":"10003","status":"0"})";
+        }
+        if (cmd == "list")
+        {
+            command = R"({"command":"list_friend","id":"10000"})";
+        }
 
-        memset(&Packet_Send, 0, BUF_SIZE + 4);
-        //Packet_Send.Length = strlen(buf);
-        //memcpy(Packet_Send.Data, buf, strlen(buf));
-        Packet_Send.Length = BUF_SIZE;
-        memcpy(Packet_Send.Data, buf, BUF_SIZE);
-        cout << "sizeof Packet:" << sizeof(Packet_Send) << endl;
-        retVal = sock.Send(sHost, (char*)&Packet_Send, BUF_SIZE + 4);
+        Packet_Send.Length = command.size();
+        memcpy(Packet_Send.Data, command.c_str(), command.size());
+        retVal = sock.Send(sHost, (char*)&Packet_Send, command.size() + 4);
         if (SOCKET_ERROR == retVal)
         {
             cout << "send failed!" << endl;

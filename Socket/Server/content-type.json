@@ -1,0 +1,12 @@
+{
+    ".bmp": "application/x-bmp",
+    ".html": "text/html",
+    ".ico": "image/x-icon",
+    ".img": "application/x-img",
+    ".jpe": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".jpg": "application/x-jpg",
+    ".json": "application/json",
+    "png": "application/x-png",
+    ".css":"text/css"
+}

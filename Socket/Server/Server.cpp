@@ -1,4 +1,8 @@
+#undef  WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+
 #include <iostream>
+#include <unordered_map>
 #include <thread>
 #include <string>
 #include <string.h>
@@ -8,43 +12,39 @@
 #include <MyEvent.h>
 #include <MSocket.h>
 #include <Public.h>
-#pragma comment(lib,"Lib.lib")
+#include <MDatabase.h>
+#include "Message.h"
+#include "MJson.h"
+#include "Utils.h"
+#include "CFileIO.h"
+#include "Http_Server.h"
 using namespace std;
 
-std::mutex mtx_CIP;
-std::mutex mtx_CSocket;
-std::mutex mtx_sClient;
-std::mutex mtx_MsgQue;
-std::mutex mtx_Packet;
+#ifdef _WIN32
+#pragma comment(lib,"Lib.lib")
+#endif
+
+
+mutex mtx_CIP;
+mutex mtx_CSocket;
+mutex mtx_sClient;
+mutex mtx_MsgQue;
+mutex mtx_Packet;
+mutex mtx_Map_User;
 queue <Packet> Packet_Queue;
 vector <Cli_Info> CIP;    //客户端IP
 vector <SOCKET> CSocket;    //客户端套接字
-std::mutex  Stop;
-std::mutex Ender;
 SOCKET sServer;        //服务器套接字  
 SOCKET sClient;        //客户端套接字  
 MSocket sock;
-
-int Certificate(SOCKET Client)
-{
-    int Length;
-    sock.Recv(Client, (char*)&Length, 4);
-    char Passwd[1024];
-    memset(Passwd, 0, 1024);
-    sock.Recv(Client, Passwd, Length);
-
-    if (strcmp(Passwd, "root") == 0)
-    {
-        return 0;
-    }
-    else
-    {
-        return -1;
-    }
-}
+MDatabase Conn;
+CFileIO File;
+unordered_map<string, int(*)(const char*, SOCKET)> Map_Func;
+unordered_map<string, SOCKET> Map_User;
 
 int Forward()
 {
+    cout << "Forward running" << endl;
     while (true)
     {
         Mtx_Lock(mtx_CSocket);
@@ -74,26 +74,11 @@ int Forward()
 
 int Receiver()
 {
-    string Msg;
-    Cli_Info CInfo;
     Mtx_Lock(mtx_sClient);
     SOCKET Client = sClient;
     Mtx_Unlock(mtx_sClient);
-
-    //if (Certificate(Client) != 0)
-    //{
-    //    Mtx_Lock(mtx_CSocket);
-    //    for (unsigned int i = 0; i < CSocket.size(); i++)
-    //    {
-    //        if (CSocket.at(i) == Client)
-    //        {
-    //            CSocket.erase(CSocket.begin() + i);
-    //        }
-    //    }
-    //    Mtx_Unlock(mtx_CSocket);
-    //    sock.Close(Client);
-    //    return -1;
-    //}
+    string Msg;
+    Cli_Info CInfo;
 
     if (sock.Getpeername(Client, CInfo) == 0)
     {
@@ -109,11 +94,6 @@ int Receiver()
 
     while (true)
     {
-        if (Ender.try_lock() == 1)
-        {
-            cout << "Receiver stopped" << endl;
-            return 0;
-        }
         int retVal = 0;
         int Length = 0;
         char buf[BUF_SIZE];  //接收客户端数据 
@@ -124,11 +104,12 @@ int Receiver()
 
         retVal = sock.Recv(Client, (char*)buf, Length);
         printf("Data:");
-        for (int i = 0; i < 20; i++)
+        for (int i = 0; i < Length; i++)
         {
             printf("0x%02x ", buf[i]);
         }
         cout << endl;
+        cout << "Data_String:" << buf << endl;
         if (retVal <= 0)
         {
             cout << "recv failed!" << endl;
@@ -153,12 +134,28 @@ int Receiver()
         memset(&PRecv, 0, sizeof(PRecv));
         PRecv.Length = Length;
         memcpy(PRecv.Data, buf, BUF_SIZE);
-        Mtx_Lock(mtx_Packet);
-        Packet_Queue.push(PRecv);
-        Mtx_Unlock(mtx_Packet);
 
-
-        cout << "receive: " << buf << endl;
+        //获取指令
+        Document document;
+        document.Parse(buf);
+        if (document.IsObject())
+        {
+            if (document.HasMember("command"))
+            {
+                Value &value1 = document["command"];
+                string command = value1.GetString();
+                unordered_map<string, int(*)(const char*, SOCKET)>::iterator it;
+                it = Map_Func.find(command);
+                if (it!=Map_Func.end())
+                {
+                    it->second(buf, Client);
+                }
+                else
+                {
+                    cout << "command not found" << endl;
+                }
+            }
+        }
         MSleep(1, "ms");
     }
     return 0;
@@ -166,6 +163,7 @@ int Receiver()
 
 int GenRec()
 {
+    cout << "GenRec running" << endl;
     while (true)
     {
         sClient = sock.Accept(sServer);
@@ -192,17 +190,10 @@ int GenRec()
 
 int main()
 {
+    InitMap();
     int retVal = 0;
-    Mtx_Init(Stop, true);
-    Mtx_Init(Ender, true);
     sServer = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    CSocket.reserve(1000);
-    if (sServer == -1)
-    {
-        cout << "Socket failed!" << endl;
-        sock.Close(sServer);
-        return -1;
-    }
+    CSocket.reserve(1024);
 
     retVal = sock.Bind(sServer, 9000, AF_INET);
     if (retVal == -1)
@@ -220,22 +211,36 @@ int main()
         retVal = 0;
         return -1;
     }
-    thread Gen(GenRec);
-    Gen.detach();
-    thread Fwd(Forward);
-    Fwd.detach();
-    string cmd;
 
-    while (cin >> cmd)
+    if (Conn.Connect("192.168.1.2", "root", "admin", "myim", 3306) != 0)
     {
-        if (cmd == "pause")
-            Mtx_Unlock(Ender);
-        else if (cmd == "continue")
-            Mtx_Lock(Ender);
-        MSleep(1, "ms");
+        cout << "Database connect failed" << endl;
+        return -1;
+    }
+    else
+    {
+        cout << "Database connect succeed" << endl;
     }
 
-    Mtx_Wait(Stop);
+    thread Gen(GenRec);
+    thread Fwd(Forward);
+    //while (true)
+    //{
+    //    string cmd;
+    //    cin >> cmd;
+    //    if (cmd=="list")
+    //    {
+    //        unordered_map<string, SOCKET>::iterator it;
+    //        for (it=Map_User.begin();it!=Map_User.end();it++)
+    //        {
+    //            cout << "id:" << it->first << endl;
+    //        }
+    //    }
+    //    MSleep(10, "ms");
+    //}
+    startHttpServer("0.0.0.0", 9001, MyHttpServerHandler, NULL);
+    Gen.join();
+    Fwd.join();
     return 0;
 }
 

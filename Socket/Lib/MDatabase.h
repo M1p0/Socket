@@ -1,7 +1,6 @@
 #pragma once
 //需要自己添加mysql头文件目录
 #include <iostream>
-#include <string.h>
 #include <mysql.h>
 #include <string>
 #include <vector>

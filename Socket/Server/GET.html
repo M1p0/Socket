@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+</head>
+<body>
+    <input type="text" id="url">
+    <button id="get">get</button>
+    <div id="recv"></div>
+</body>
+<script>
+        var oUrl = document.getElementById("url");
+        var oGet = document.getElementById("get");
+        var oRecv = document.getElementById("recv");
+
+        oGet.addEventListener('click',ajax,false);
+
+        function ajax(){
+            var url = oUrl.value;
+            var xml = new XMLHttpRequest();
+            xml.open("GET",url);
+            xml.send();
+            xml.onreadystatechange = function(){
+                console.log("readyState:"+xml.readyState);
+                console.log("status:"+xml.status);
+                if(xml.readyState === 4 && xml.status ===200){
+                    console.log(xml.responseText);
+                    oRecv.innerHTML = xml.responseText;
+                }
+            }
+        }
+</script>
+</html>
