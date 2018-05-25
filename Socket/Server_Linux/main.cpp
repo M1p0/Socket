@@ -21,15 +21,15 @@ std::mutex  Stop;
 std::mutex Ender;
 SOCKET sServer;        //服务器套接字  
 SOCKET sClient;        //客户端套接字  
-MSocket sock;
+MSocket Sock;
 
 int Certificate(SOCKET Client)
 {
     int Length;
-    sock.Recv(Client, (char*)&Length, 4);
+    Sock.Recv(Client, (char*)&Length, 4);
     char Passwd[1024];
     memset(Passwd, 0, 1024);
-    sock.Recv(Client, Passwd, Length);
+    Sock.Recv(Client, Passwd, Length);
 
     if (strcmp(Passwd, "root") == 0)
     {
@@ -54,7 +54,7 @@ int Forward()
             {
                 Packet Packet_Send;
                 Packet_Send = Packet_Queue.front();
-                int retVal = sock.Send(*it, (char*)&Packet_Send, BUF_SIZE + 4); //阻塞式send 待修改
+                int retVal = Sock.Send(*it, (char*)&Packet_Send, BUF_SIZE + 4); //阻塞式send 待修改
                 if (retVal == -1)
                 {
                     cout << "Forward Failed" << endl;
@@ -89,11 +89,11 @@ int Receiver()
             }
         }
         Mtx_Unlock(mtx_CSocket);
-        sock.Close(Client);
+        Sock.Close(Client);
         return -1;
     }
 
-    if (sock.Getpeername(Client, CInfo) == 0)
+    if (Sock.Getpeername(Client, CInfo) == 0)
     {
         Mtx_Lock(mtx_CIP);
         CIP.push_back(CInfo);
@@ -116,11 +116,11 @@ int Receiver()
         int Length = 0;
         char buf[BUF_SIZE];  //接收客户端数据 
         memset(buf, 0, BUF_SIZE);
-        retVal = sock.Recv(Client, (char*)&Length, 4);
+        retVal = Sock.Recv(Client, (char*)&Length, 4);
 
         printf("Length:0x%x  ", Length);
 
-        retVal = sock.Recv(Client, (char*)buf, Length);
+        retVal = Sock.Recv(Client, (char*)buf, Length);
         printf("Data:");
         for (int i = 0; i < 20; i++)
         {
@@ -142,7 +142,7 @@ int Receiver()
             }
             Mtx_Unlock(mtx_CSocket);
             Mtx_Unlock(mtx_CIP);
-            sock.Close(Client);
+            Sock.Close(Client);
             return -1;
         }
         if (buf[0] == '0')
@@ -166,7 +166,7 @@ int GenRec()
 {
     while (true)
     {
-        sClient = sock.Accept(sServer);
+        sClient = Sock.Accept(sServer);
         if (sClient == -1)
         {
             cout << "Accept failed!" << endl;
@@ -198,23 +198,23 @@ int main()
     if (sServer == -1)
     {
         cout << "Socket failed!" << endl;
-        sock.Close(sServer);
+        Sock.Close(sServer);
         return -1;
     }
 
-    retVal = sock.Bind(sServer, 9000, AF_INET);
+    retVal = Sock.Bind(sServer, 9000, AF_INET);
     if (retVal == -1)
     {
         cout << "bind failed!" << endl;
-        sock.Close(sServer);
+        Sock.Close(sServer);
         retVal = 0;
         return -1;
     }
-    retVal = sock.Listen(sServer, 5);
+    retVal = Sock.Listen(sServer, 5);
     if (retVal == -1)
     {
         cout << "listen failed!" << endl;
-        sock.Close(sServer);
+        Sock.Close(sServer);
         retVal = 0;
         return -1;
     }

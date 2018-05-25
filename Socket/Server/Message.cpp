@@ -19,9 +19,7 @@ extern mutex mtx_CSocket;
 extern mutex mtx_Packet;
 extern mutex mtx_Map_User;
 extern queue <Packet> Packet_Queue;
-extern vector <Cli_Info> CIP;    //客户端IP
-extern vector <SOCKET> CSocket;    //客户端套接字
-extern MSocket sock;
+extern MSocket Sock;
 extern MDatabase Conn;
 extern unordered_map<string, SOCKET> Map_User;
 int Logon(const char* JsonData, SOCKET sClient)
@@ -59,7 +57,7 @@ int Logon(const char* JsonData, SOCKET sClient)
         memset(Packet_Send.Data, 0, BUF_SIZE);
         Packet_Send.Length = JsonSend.size();
         memcpy(Packet_Send.Data, JsonSend.c_str(), JsonSend.size());
-        sock.Send(sClient, (char*)&Packet_Send, JsonSend.size() + 4);
+        Sock.Send(sClient, (char*)&Packet_Send, JsonSend.size() + 4);
         return 0;
     }
     else
@@ -106,7 +104,7 @@ int Login(const char* JsonData, SOCKET sClient)
         memset(Packet_Send.Data, 0, BUF_SIZE);
         Packet_Send.Length = JsonSend.size();
         memcpy(Packet_Send.Data, JsonSend.c_str(), JsonSend.size());
-        sock.Send(sClient, (char*)&Packet_Send, JsonSend.size() + 4);
+        Sock.Send(sClient, (char*)&Packet_Send, JsonSend.size() + 4);
         Mtx_Lock(mtx_Map_User);
         Map_User.insert(pair<string, SOCKET>(id, sClient));
         Mtx_Unlock(mtx_Map_User);
@@ -138,7 +136,7 @@ int Logout(const char* JsonData, SOCKET sClient)
             Mtx_Lock(mtx_Map_User);
             Map_User.erase(it);
             Mtx_Unlock(mtx_Map_User);
-            sock.Close(sClient);
+            Sock.Close(sClient);
             return 0;
         }
         else
@@ -267,7 +265,7 @@ int ListFriend(const char* JsonData, SOCKET sClient)
                     memset(&Packet_Send, 0, BUF_SIZE + 4);
                     Packet_Send.Length = Data.size();
                     memcpy(Packet_Send.Data, Data.c_str(), Data.size());
-                    sock.Send(sClient, (char*)&Packet_Send, Data.size() + 4);
+                    Sock.Send(sClient, (char*)&Packet_Send, Data.size() + 4);
 
                     return 0;
                 }

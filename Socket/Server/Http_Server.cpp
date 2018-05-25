@@ -208,10 +208,6 @@ void Create_Type_Map()
         {
             Map_Content_Type.insert(pair<string, string>(it->name.GetString(), it->value.GetString()));
         }
-        //for (unordered_map<string, string>::iterator it=Map_Content_Type.begin();it!=Map_Content_Type.end();it++)
-        //{
-        //    cout << it->first << it->second << endl;
-        //}
     }
     else
     {

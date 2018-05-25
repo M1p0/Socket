@@ -11,7 +11,7 @@
 using namespace std;
 
 SOCKET sHost;
-MSocket sock;
+MSocket Sock;
 
 int Receiver()
 {
@@ -22,8 +22,8 @@ int Receiver()
         int Length = 0;
         char Data[BUF_SIZE]; //接收数据缓冲区 
         memset(Data, 0, BUF_SIZE);
-        sock.Recv(sHost, (char*)&Length, 4);
-        retVal = sock.Recv(sHost, Data, Length);
+        Sock.Recv(sHost, (char*)&Length, 4);
+        retVal = Sock.Recv(sHost, Data, Length);
         if (retVal == -1)
         {
             return -1;
@@ -46,7 +46,7 @@ int main()
     IP = "192.168.1.2";
     Port = 9000;
 
-    if (sock.Init() != 0)      //初始化套结字动态库
+    if (Sock.Init() != 0)      //初始化套结字动态库
     {
         cout << "WSAStartup failed!" << endl;
         return -1;
@@ -58,7 +58,7 @@ int main()
         cout << "socket failed!" << endl;
         return  -1;
     }
-    retVal = sock.Connect(sHost, IP.c_str(), Port);      //连接服务器
+    retVal = Sock.Connect(sHost, IP.c_str(), Port);      //连接服务器
     if (retVal != 0)
     {
         return -1;
@@ -100,7 +100,7 @@ int main()
         }
         Packet_Send.Length = command.size();
         memcpy(Packet_Send.Data, command.c_str(), command.size());
-        retVal = sock.Send(sHost, (char*)&Packet_Send, command.size() + 4);
+        retVal = Sock.Send(sHost, (char*)&Packet_Send, command.size() + 4);
         if (SOCKET_ERROR == retVal)
         {
             cout << "send failed!" << endl;
@@ -110,7 +110,7 @@ int main()
         MSleep(1, "ms");
     }
     //退出
-    sock.Close(sHost); //关闭套接字
+    Sock.Close(sHost); //关闭套接字
     return 0;
 }
 
