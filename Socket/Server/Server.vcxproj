@@ -74,8 +74,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>..\Lib;..\Include\rapidjson\;C:\Program Files\MySQL\MySQL Server 5.7\include\;..\Include\libevent\;$(IncludePath)</IncludePath>
-    <LibraryPath>..\Lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>..\Lib;..\Include\rapidjson\;C:\Program Files\MySQL\MySQL Server 5.7\include\;..\Include\libevent\;C:\Program Files\boost_1_65_0\;D:\Library\websocketpp\;$(IncludePath)</IncludePath>
+    <LibraryPath>..\Lib;C:\Program Files\boost_1_65_0\stage\lib\;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -107,11 +107,13 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <AdditionalOptions>-D_SCL_SECURE_NO_WARNINGS %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>Lib.lib;libevent.lib;libevent_core.lib;libevent_extras.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <IgnoreSpecificDefaultLibraries>libcmt.lib</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -152,15 +154,19 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Http_Server.cpp" />
+    <ClCompile Include="Logic_API.cpp" />
     <ClCompile Include="Message.cpp" />
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="Utils.cpp" />
+    <ClCompile Include="WebSocket_Server.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Http_Server.h" />
+    <ClInclude Include="Logic_API.h" />
     <ClInclude Include="Message.h" />
     <ClInclude Include="MJson.h" />
     <ClInclude Include="Utils.h" />
+    <ClInclude Include="WebSocket_Server.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

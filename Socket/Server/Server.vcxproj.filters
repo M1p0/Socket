@@ -27,6 +27,12 @@
     <ClCompile Include="Http_Server.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Logic_API.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="WebSocket_Server.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Message.h">
@@ -39,6 +45,12 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Http_Server.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Logic_API.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="WebSocket_Server.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

@@ -6,3 +6,5 @@
 
 bool startHttpServer(const char *ip, int port, void(*cb)(struct evhttp_request *, void *), void *arg);
 void MyHttpServerHandler(struct evhttp_request* req, void* arg);
+void Create_Type_Map();
+

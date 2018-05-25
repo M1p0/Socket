@@ -74,9 +74,13 @@ int main()
         memset(&Packet_Send, 0, BUF_SIZE + 4);
         //向服务器发送数据
         cout << "Send:";
-        if (cmd=="login")
+        if (cmd=="login1")
         {
             command = R"({"command":"login","id":"10000","password":"password"})";
+        }
+        if (cmd == "login2")
+        {
+            command = R"({"command":"login","id":"10003","password":"passwd"})";
         }
         if (cmd=="logout")
         {
@@ -90,7 +94,10 @@ int main()
         {
             command = R"({"command":"list_friend","id":"10000"})";
         }
-
+        if (cmd == "send")
+        {
+            command = R"({"command":"send_message","src":"10000","dst":"10003","message":"test!!!"})";
+        }
         Packet_Send.Length = command.size();
         memcpy(Packet_Send.Data, command.c_str(), command.size());
         retVal = sock.Send(sHost, (char*)&Packet_Send, command.size() + 4);

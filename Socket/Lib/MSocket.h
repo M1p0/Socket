@@ -3,7 +3,7 @@
 //#undef  WIN32_LEAN_AND_MEAN
 //#define WIN32_LEAN_AND_MEAN
 #include <string>
-#define BUF_SIZE 1024
+#define BUF_SIZE 2048
 
 #ifdef _WIN32
 #undef  WIN32_LEAN_AND_MEAN

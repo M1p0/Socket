@@ -8,3 +8,6 @@
 
 int InitMap();
 int Log(const char* log, const char* Filename = "./.log");
+void FindLast(const char* Source, const char* Target, size_t &Pos);
+void FindFirst(const char* Source, const char* Target, size_t &Pos);
+void GetExtension(const char* Source, char* buffer);

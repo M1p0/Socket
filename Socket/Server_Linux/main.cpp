@@ -13,7 +13,6 @@ using namespace std;
 std::mutex mtx_CIP;
 std::mutex mtx_CSocket;
 std::mutex mtx_sClient;
-std::mutex mtx_MsgQue;
 std::mutex mtx_Packet;
 queue <Packet> Packet_Queue;
 vector <Cli_Info> CIP;    //¿Í»§¶ËIP

@@ -1,0 +1,85 @@
+* {
+    margin: 0;
+}
+
+button{
+    border-radius: 5px;
+    border:none;
+    width:100%;
+    background-color:#08c;
+    box-shadow: 0 15px 30px 0 rgba(0,0,0,.15);
+}
+
+.lc{
+    font-family: TypoRound;
+}
+
+#bubble {
+    display: block; /*去除canvas行间距的影响*/
+}
+
+#login{
+    position: absolute;
+    left:50%;
+    top:50%;
+    margin-top:-180px;
+    margin-left:-160px;
+    width:320px;
+    height:350px;
+    background-color: #f2efe6;
+    text-align: center;
+    opacity: .8;
+    border-radius: 5px;
+}
+
+#login .login-wrap{
+    margin:50px 30px;
+}
+
+#login .header{
+    font-size: 32px;
+}
+
+#login .text-input{
+    width:100%;
+    outline: 0;
+    margin-top:20px;
+    border: none;
+    border-bottom: 2px solid #ddd;
+    padding: 5px;
+    font-size: 16px;
+}
+
+#login .text-right{
+    float:right;
+    cursor: pointer;
+}
+
+#login .text-left{
+    float:left;
+    color:red;
+}
+
+#login .text-right{
+    margin-top:10px;
+    float: right;
+    cursor: pointer;
+    color:#08c;
+}
+
+#login .login-wrap button{
+    margin-top:20px;
+}
+
+#login button{
+    margin-top:30px;
+    height:40px;
+    color:#fff;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+#login .signin-wrap{
+    display:none;
+    margin:50px 30px;
+}

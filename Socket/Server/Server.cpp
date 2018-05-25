@@ -5,10 +5,10 @@
 #include <unordered_map>
 #include <thread>
 #include <string>
+#include "WebSocket_Server.h"
 #include <string.h>
 #include <queue>
 #include <vector>
-#include <mutex>
 #include <MyEvent.h>
 #include <MSocket.h>
 #include <Public.h>
@@ -18,17 +18,15 @@
 #include "Utils.h"
 #include "CFileIO.h"
 #include "Http_Server.h"
-using namespace std;
 
+using namespace std;
 #ifdef _WIN32
 #pragma comment(lib,"Lib.lib")
 #endif
 
-
 mutex mtx_CIP;
 mutex mtx_CSocket;
 mutex mtx_sClient;
-mutex mtx_MsgQue;
 mutex mtx_Packet;
 mutex mtx_Map_User;
 queue <Packet> Packet_Queue;
@@ -41,32 +39,71 @@ MDatabase Conn;
 CFileIO File;
 unordered_map<string, int(*)(const char*, SOCKET)> Map_Func;
 unordered_map<string, SOCKET> Map_User;
+extern unordered_map<string, WS_Info> Map_WS_User;
 
 int Forward()
 {
-    cout << "Forward running" << endl;
+    cout << "Forward Server running..." << endl;
     while (true)
     {
-        Mtx_Lock(mtx_CSocket);
         Mtx_Lock(mtx_Packet);
-        if (Packet_Queue.size() != 0 && CSocket.size() != 0)
+        if (Packet_Queue.size() != 0)
         {
-            vector<SOCKET>::iterator it;
-            for (it = CSocket.begin(); it != CSocket.end(); it++)
+            string Data = Packet_Queue.front().Data;
+            Document document;
+            document.Parse(Data.c_str());
+
+            if (document.HasMember("src") && document.HasMember("dst") && document.HasMember("message"))
             {
-                Packet Packet_Send;
-                Packet_Send = Packet_Queue.front();
-                int retVal = sock.Send(*it, (char*)&Packet_Send, BUF_SIZE + 4); //阻塞式send 待修改
-                if (retVal == -1)
+                Value &value1 = document["src"];
+                Value &value2 = document["dst"];
+                Value &value3 = document["message"];
+                string src = value1.GetString();
+                string dst = value2.GetString();
+                int i = 0;
+                if (dst=="10000")
                 {
-                    cout << "Forward Failed" << endl;
+                    i = 1;
                 }
+                string message = value3.GetString();
+                unordered_map<string, SOCKET>::iterator it;
+                Mtx_Lock(mtx_Map_User);
+                it = Map_User.find(dst);
+                if (it != Map_User.end())  //android在线
+                {
+                    sock.Send(it->second, (char*)&Packet_Queue.front(), Packet_Queue.front().Length + 4);
+                    Packet_Queue.pop();
+                    Mtx_Unlock(mtx_Packet);
+                }
+                else  //web在线
+                {
+                    unordered_map<string, WS_Info>::iterator it;
+                    it = Map_WS_User.find(dst);
+                    if (it!=Map_WS_User.end())
+                    {
+                        it->second.server->send(it->second.hdl, Packet_Queue.front().Data, websocketpp::frame::opcode::text);
+                        Packet_Queue.pop();
+                        Mtx_Unlock(mtx_Packet);
+                    }
+                    else //写入数据库
+                    {
+                        Packet_Queue.pop();
+                        Mtx_Unlock(mtx_Packet);
+                    }
+
+                }
+                Mtx_Unlock(mtx_Map_User);
             }
-            Packet_Queue.pop();
+            else//json包错误 无src/dst/message
+            {
+
+            }
         }
-        Mtx_Unlock(mtx_Packet);
-        Mtx_Unlock(mtx_CSocket);
-        MSleep(1, "ms");
+        else
+        {
+            Mtx_Unlock(mtx_Packet);
+            MSleep(1, "ms");
+        }
     }
     return 0;
 }
@@ -112,7 +149,7 @@ int Receiver()
         cout << "Data_String:" << buf << endl;
         if (retVal <= 0)
         {
-            cout << "recv failed!" << endl;
+            cout << "Android client disconnected" << endl;
             Mtx_Lock(mtx_CSocket);
             Mtx_Lock(mtx_CIP);
             for (unsigned int i = 0; i < CSocket.size(); i++)
@@ -146,11 +183,11 @@ int Receiver()
                 string command = value1.GetString();
                 unordered_map<string, int(*)(const char*, SOCKET)>::iterator it;
                 it = Map_Func.find(command);
-                if (it!=Map_Func.end())
+                if (it != Map_Func.end())
                 {
                     it->second(buf, Client);
                 }
-                else
+                else    //错误的json包 command不正确
                 {
                     cout << "command not found" << endl;
                 }
@@ -163,7 +200,7 @@ int Receiver()
 
 int GenRec()
 {
-    cout << "GenRec running" << endl;
+    cout << "Listener running..." << endl;
     while (true)
     {
         sClient = sock.Accept(sServer);
@@ -174,7 +211,7 @@ int GenRec()
         }
         else
         {
-            cout << "connected" << endl;
+            cout << "Android client connected" << endl;
             Mtx_Lock(mtx_CSocket);
             Mtx_Lock(mtx_sClient);
             CSocket.push_back(sClient);
@@ -190,7 +227,9 @@ int GenRec()
 
 int main()
 {
+
     InitMap();
+    Create_Type_Map();
     int retVal = 0;
     sServer = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     CSocket.reserve(1024);
@@ -223,22 +262,13 @@ int main()
     }
 
     thread Gen(GenRec);
+    MSleep(10, "ms");
     thread Fwd(Forward);
-    //while (true)
-    //{
-    //    string cmd;
-    //    cin >> cmd;
-    //    if (cmd=="list")
-    //    {
-    //        unordered_map<string, SOCKET>::iterator it;
-    //        for (it=Map_User.begin();it!=Map_User.end();it++)
-    //        {
-    //            cout << "id:" << it->first << endl;
-    //        }
-    //    }
-    //    MSleep(10, "ms");
-    //}
+    MSleep(10, "ms");
+    thread WS_Server(WS_Run);
+    MSleep(10, "ms");
     startHttpServer("0.0.0.0", 9001, MyHttpServerHandler, NULL);
+    WS_Server.join();
     Gen.join();
     Fwd.join();
     return 0;
