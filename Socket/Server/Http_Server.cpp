@@ -5,10 +5,10 @@
 #include <CFileIO.h>
 #include "MJson.h"
 #include "Utils.h"
-#include "Logic_API.h"
+#include "Http_API.h"
 
 using namespace std;
-unordered_map<string, int(*)(const char*, char*)> Map_Logic_API;
+unordered_map<string, int(*)(const char*, char*)> Map_Http_API;
 unordered_map<string, string> Map_Content_Type;
 extern CFileIO File;
 #define BUFFER_SIZE 1024*1024
@@ -84,8 +84,8 @@ void MyHttpServerHandler(struct evhttp_request* req, void* arg)
                     Value &value1 = document["command"];
                     string command = value1.GetString();
                     unordered_map<string, int(*)(const char*, char*)>::iterator it;  //调用已有api
-                    it = Map_Logic_API.find(command);
-                    if (it != Map_Logic_API.end())
+                    it = Map_Http_API.find(command);
+                    if (it != Map_Http_API.end())
                     {
                         char JsonSend[BUF_SIZE];
                         memset(JsonSend, 0, BUF_SIZE);
@@ -104,11 +104,6 @@ void MyHttpServerHandler(struct evhttp_request* req, void* arg)
                         DocSend.AddMember("command", "return", DocSend.GetAllocator());
                         DocSend.AddMember("status", "fail", DocSend.GetAllocator());
                         DocSend.AddMember("detail", "wrong command", DocSend.GetAllocator());
-                        StringBuffer buffer;
-                        PrettyWriter<StringBuffer> writer(buffer);
-                        DocSend.Accept(writer);
-                        string JsonSend = buffer.GetString();
-                        evbuffer_add(buf, JsonSend.c_str(), JsonSend.size());
                     }
                 }
                 else//no command in Json
@@ -116,11 +111,6 @@ void MyHttpServerHandler(struct evhttp_request* req, void* arg)
                     DocSend.AddMember("command", "return", DocSend.GetAllocator());
                     DocSend.AddMember("status", "fail", DocSend.GetAllocator());
                     DocSend.AddMember("detail", "no command in Json", DocSend.GetAllocator());
-                    StringBuffer buffer;
-                    PrettyWriter<StringBuffer> writer(buffer);
-                    DocSend.Accept(writer);
-                    string JsonSend = buffer.GetString();
-                    evbuffer_add(buf, JsonSend.c_str(), JsonSend.size());
                 }
             }
             else  //not an Json Object
@@ -128,13 +118,12 @@ void MyHttpServerHandler(struct evhttp_request* req, void* arg)
                 DocSend.AddMember("command", "return", DocSend.GetAllocator());
                 DocSend.AddMember("status", "fail", DocSend.GetAllocator());
                 DocSend.AddMember("detail", "not an Json Object", DocSend.GetAllocator());
-                StringBuffer buffer;
-                PrettyWriter<StringBuffer> writer(buffer);
-                DocSend.Accept(writer);
-                string JsonSend = buffer.GetString();
-                evbuffer_add(buf, JsonSend.c_str(), JsonSend.size());
             }
-
+            StringBuffer buffer;
+            PrettyWriter<StringBuffer> writer(buffer);
+            DocSend.Accept(writer);
+            string JsonSend = buffer.GetString();
+            evbuffer_add(buf, JsonSend.c_str(), JsonSend.size());
         }
         else //not post
         {

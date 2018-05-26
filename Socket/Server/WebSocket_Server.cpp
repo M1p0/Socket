@@ -81,46 +81,59 @@ int WS_SendMessage(const char* JsonData, WS_Info Info)
 {
     Document DocReceive;
     Document DocSend;
+    DocSend.SetObject();
     int nRow;
     DocReceive.Parse(JsonData);
-    if (DocReceive.IsObject())
+
+    if (DocReceive.HasMember("src") && DocReceive.HasMember("dst") && DocReceive.HasMember("message"))
     {
-        if (DocReceive.HasMember("src") && DocReceive.HasMember("dst") && DocReceive.HasMember("message"))
-        {
-            Value &value1 = DocReceive["src"];
-            Value &value2 = DocReceive["dst"];
-            Value &value3 = DocReceive["message"];
-            string src = value1.GetString();
-            string dst = value2.GetString();
-            string message = value3.GetString();
+        Value &value1 = DocReceive["src"];
+        Value &value2 = DocReceive["dst"];
+        Value &value3 = DocReceive["message"];
+        string src = value1.GetString();
+        string dst = value2.GetString();
+        string message = value3.GetString();
 
-            string SQL = R"(select * from friendlist where id=")" + src + R"(")" + R"(and friend_id=")" + dst + R"(";)";
-            vector<vector<string>> Result(1);
-            Conn.ExecSQL(SQL.c_str(), Result, nRow);
+        string SQL = R"(select * from friendlist where id=")" + src + R"(")" + R"(and friend_id=")" + dst + R"(";)";
+        vector<vector<string>> Result(1);
+        Conn.ExecSQL(SQL.c_str(), Result, nRow);
 
-            if (nRow == 0)  //无此好友关系
-            {
-                return -1;
-            }
-            else
-            {
-                Packet Packet_send;
-                memset(&Packet_send, 0, BUF_SIZE + 4);
-                Packet_send.Length = strlen(JsonData);
-                memcpy(Packet_send.Data, JsonData, strlen(JsonData));
-                Mtx_Lock(mtx_Packet);
-                Packet_Queue.push(Packet_send);
-                Mtx_Unlock(mtx_Packet);
-                return 0;//缺回复json包
-            }
-        }
-        else  //json错误
+        if (nRow == 0)  //无此好友关系
         {
+            DocSend.AddMember("command", "send_message_return", DocSend.GetAllocator());
+            DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+            DocSend.AddMember("detail", "dst not in friend_list", DocSend.GetAllocator());
+            StringBuffer buffer;
+            PrettyWriter<StringBuffer> writer(buffer);
+            DocSend.Accept(writer);
+            string JsonSend = buffer.GetString();
+            Info.server->send(Info.hdl, JsonSend.c_str(), websocketpp::frame::opcode::text);
             return -1;
+        }
+        else
+        {
+            Packet Packet_send;
+            memset(&Packet_send, 0, BUF_SIZE + 4);
+            Packet_send.Length = strlen(JsonData);
+            memcpy(Packet_send.Data, JsonData, strlen(JsonData));
+            Mtx_Lock(mtx_Packet);
+            Packet_Queue.push(Packet_send);
+            Mtx_Unlock(mtx_Packet);
+
+            //缺回复json包
+            return 0;
         }
     }
     else  //json错误
     {
+        DocSend.AddMember("command", "login_return", DocSend.GetAllocator());
+        DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+        DocSend.AddMember("detail", "wrong json", DocSend.GetAllocator());
+        StringBuffer buffer;
+        PrettyWriter<StringBuffer> writer(buffer);
+        DocSend.Accept(writer);
+        string JsonSend = buffer.GetString();
+        Info.server->send(Info.hdl, JsonSend.c_str(), websocketpp::frame::opcode::text);
         return -1;
     }
 }
@@ -140,14 +153,16 @@ void OnClose(WebsocketServer *server, websocketpp::connection_hdl hdl)
 void OnMessage(WebsocketServer *server, websocketpp::connection_hdl hdl, message_ptr msg)
 {
 
-    string Msg = msg->get_payload();
-    Document document;
-    document.Parse(Msg.c_str());
-    if (document.IsObject())
+    string JsonData = msg->get_payload();
+    Document DocReceive;
+    Document DocSend;
+    DocSend.SetObject();
+    DocReceive.Parse(JsonData.c_str());
+    if (DocReceive.IsObject())
     {
-        if (document.HasMember("command"))
+        if (DocReceive.HasMember("command"))
         {
-            Value &value1 = document["command"];
+            Value &value1 = DocReceive["command"];
             string command = value1.GetString();
             unordered_map<string, int(*)(const char*, WS_Info)>::iterator it;
             it = Map_WS_API.find(command);
@@ -156,25 +171,46 @@ void OnMessage(WebsocketServer *server, websocketpp::connection_hdl hdl, message
                 WS_Info Info;
                 Info.server = server;
                 Info.hdl = hdl;
-                it->second(Msg.c_str(), Info);
+                it->second(JsonData.c_str(), Info);
             }
             else //wrong command
             {
-
+                DocSend.AddMember("command","return",DocSend.GetAllocator());
+                DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+                DocSend.AddMember("detail", "wrong command", DocSend.GetAllocator());
+                StringBuffer buffer;
+                PrettyWriter<StringBuffer> writer(buffer);
+                DocSend.Accept(writer);
+                string JsonSend = buffer.GetString();
+                server->send(hdl, JsonSend.c_str(), websocketpp::frame::opcode::text);
+                return;
             }
         }
         else // no command
         {
-
+            DocSend.AddMember("command", "return", DocSend.GetAllocator());
+            DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+            DocSend.AddMember("detail", "no command", DocSend.GetAllocator());
+            StringBuffer buffer;
+            PrettyWriter<StringBuffer> writer(buffer);
+            DocSend.Accept(writer);
+            string JsonSend = buffer.GetString();
+            server->send(hdl, JsonSend.c_str(), websocketpp::frame::opcode::text);
+            return;
         }
     }
     else  //not object
     {
-
+        DocSend.AddMember("command", "return", DocSend.GetAllocator());
+        DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+        DocSend.AddMember("detail", "not an Json Object", DocSend.GetAllocator());
+        StringBuffer buffer;
+        PrettyWriter<StringBuffer> writer(buffer);
+        DocSend.Accept(writer);
+        string JsonSend = buffer.GetString();
+        server->send(hdl, JsonSend.c_str(), websocketpp::frame::opcode::text);
+        return;
     }
-
-
-
 }
 
 

@@ -72,8 +72,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>..\Lib;$(IncludePath)</IncludePath>
-    <LibraryPath>..\Lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>..\Lib\MyLib\include\;$(IncludePath)</IncludePath>
+    <LibraryPath>..\Lib\MyLib\lib\;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>

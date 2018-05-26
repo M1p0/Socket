@@ -1,10 +1,10 @@
 #include "WebSocket_Server.h"
 #include "Utils.h"
 #include <CFileIO.h>
-#include "Logic_API.h"
+#include "Http_API.h"
 
 extern unordered_map<string, int(*)(const char*, SOCKET)> Map_Func;
-extern unordered_map<string, int(*)(const char*, char*)> Map_Logic_API;
+extern unordered_map<string, int(*)(const char*, char*)> Map_Http_API;
 extern unordered_map<string, int(*)(const char*, WS_Info)> Map_WS_API;
 extern CFileIO File;
 
@@ -34,10 +34,10 @@ int InitMap()
     int(*pLogin_API)(const char*, char*) = &Login_API;
     int(*pAddFriend_API)(const char*, char*) = &AddFriend_API;
     int(*pListFriend_API)(const char*, char*) = &ListFriend_API;
-    Map_Logic_API.insert(pair<string, int(*)(const char*, char*)>("logon", pLogon_API));
-    Map_Logic_API.insert(pair<string, int(*)(const char*, char*)>("login", pLogin_API));
-    Map_Logic_API.insert(pair<string, int(*)(const char*, char*)>("add_friend", pAddFriend_API));
-    Map_Logic_API.insert(pair<string, int(*)(const char*, char*)>("list_friend", pListFriend_API));
+    Map_Http_API.insert(pair<string, int(*)(const char*, char*)>("logon", pLogon_API));
+    Map_Http_API.insert(pair<string, int(*)(const char*, char*)>("login", pLogin_API));
+    Map_Http_API.insert(pair<string, int(*)(const char*, char*)>("add_friend", pAddFriend_API));
+    Map_Http_API.insert(pair<string, int(*)(const char*, char*)>("list_friend", pListFriend_API));
 
 
     int(*pWS_Login)(const char*, WS_Info) = &WS_Login;

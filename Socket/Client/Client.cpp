@@ -7,7 +7,6 @@
 #include <windows.h>
 #include <MSocket.h>
 #include <Public.h>
-#pragma comment(lib,"Lib.lib")
 using namespace std;
 
 SOCKET sHost;
@@ -74,6 +73,10 @@ int main()
         memset(&Packet_Send, 0, BUF_SIZE + 4);
         //向服务器发送数据
         cout << "Send:";
+        if (cmd == "logon")
+        {
+            command = R"({"command":"logon","username":"teaaa","password":"password"})";
+        }
         if (cmd=="login1")
         {
             command = R"({"command":"login","id":"10000","password":"password"})";

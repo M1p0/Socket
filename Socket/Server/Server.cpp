@@ -81,20 +81,20 @@ int Forward()
                         Packet_Queue.pop();
                         Mtx_Unlock(mtx_Packet);
                     }
-
                 }
                 Mtx_Unlock(mtx_Map_User);
             }
             else//json°ü´íÎó ÎÞsrc/dst/message
             {
-
+                Packet_Queue.pop();
+                Mtx_Unlock(mtx_Packet);
             }
         }
-        else
+        else   //not json
         {
             Mtx_Unlock(mtx_Packet);
-            MSleep(1, "ms");
         }
+        MSleep(1, "ms");
     }
     return 0;
 }
@@ -163,7 +163,7 @@ int Receiver(SOCKET sClient)
     return 0;
 }
 
-int GenRec(SOCKET sServer)
+int Listener(SOCKET sServer)
 {
     cout << "Listener running..." << endl;
     while (true)
@@ -220,7 +220,7 @@ int main()
         cout << "Database connect succeed" << endl;
     }
 
-    thread Gen(GenRec, sServer);
+    thread Gen(Listener, sServer);
     MSleep(10, "ms");
     thread Fwd(Forward);
     MSleep(10, "ms");
@@ -232,4 +232,5 @@ int main()
     Fwd.join();
     return 0;
 }
+
 

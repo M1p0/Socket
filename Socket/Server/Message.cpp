@@ -27,6 +27,7 @@ int Logon(const char* JsonData, SOCKET sClient)
 
     Document DocReceive;
     Document DocSend;
+    DocSend.SetObject();
     int nRow;
     DocReceive.Parse(JsonData);
 
@@ -42,28 +43,28 @@ int Logon(const char* JsonData, SOCKET sClient)
         SQL = SQL + R"(commit;)";
         vector<vector<string>> Result(1);
         Conn.ExecSQL(SQL.c_str(), Result, nRow);
-
         Value ID(Result[0][0].c_str(), DocSend.GetAllocator());
-        DocSend.SetObject();
         DocSend.AddMember("command", "logon_return", DocSend.GetAllocator());
         DocSend.AddMember("status", "success", DocSend.GetAllocator());
         DocSend.AddMember("id", ID, DocSend.GetAllocator());
-        StringBuffer buffer;
-        PrettyWriter<StringBuffer> writer(buffer);
-        DocSend.Accept(writer);
-        string JsonSend = buffer.GetString();
-
-        Packet Packet_Send;
-        memset(Packet_Send.Data, 0, BUF_SIZE);
-        Packet_Send.Length = JsonSend.size();
-        memcpy(Packet_Send.Data, JsonSend.c_str(), JsonSend.size());
-        Sock.Send(sClient, (char*)&Packet_Send, JsonSend.size() + 4);
-        return 0;
     }
     else
     {
-        return -1;
+        DocSend.AddMember("command", "logon_return", DocSend.GetAllocator());
+        DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+        DocSend.AddMember("detail", "wrong Json", DocSend.GetAllocator());
     }
+
+    StringBuffer buffer;
+    PrettyWriter<StringBuffer> writer(buffer);
+    DocSend.Accept(writer);
+    string JsonSend = buffer.GetString();
+    Packet Packet_Send;
+    memset(Packet_Send.Data, 0, BUF_SIZE);
+    Packet_Send.Length = JsonSend.size();
+    memcpy(Packet_Send.Data, JsonSend.c_str(), JsonSend.size());
+    Sock.Send(sClient, (char*)&Packet_Send, JsonSend.size() + 4);
+    return 0;
 
 
 }
@@ -73,6 +74,7 @@ int Login(const char* JsonData, SOCKET sClient)
 {
     Document DocReceive;
     Document DocSend;
+    DocSend.SetObject();
     int nRow;
     DocReceive.Parse(JsonData);
     if (DocReceive.HasMember("id") && DocReceive.HasMember("password"))
@@ -85,36 +87,39 @@ int Login(const char* JsonData, SOCKET sClient)
 
         vector<vector<string>> Result(1);
         Conn.ExecSQL(SQL.c_str(), Result, nRow);
-
-        if (!nRow)
+        if (nRow == 0)  //账号密码错误
         {
-            return -1;
+            DocSend.AddMember("command", "login_return", DocSend.GetAllocator());
+            DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+            DocSend.AddMember("detail", "wrong id or password", DocSend.GetAllocator());
         }
-        Value vUsername(Result[0][0].c_str(), DocSend.GetAllocator());
-        DocSend.SetObject();
-        DocSend.AddMember("command", "login_return", DocSend.GetAllocator());
-        DocSend.AddMember("status", "success", DocSend.GetAllocator());
-        DocSend.AddMember("username", vUsername, DocSend.GetAllocator());
-        StringBuffer buffer;
-        PrettyWriter<StringBuffer> writer(buffer);
-        DocSend.Accept(writer);
-        string JsonSend = buffer.GetString();
-
-        Packet Packet_Send;
-        memset(Packet_Send.Data, 0, BUF_SIZE);
-        Packet_Send.Length = JsonSend.size();
-        memcpy(Packet_Send.Data, JsonSend.c_str(), JsonSend.size());
-        Sock.Send(sClient, (char*)&Packet_Send, JsonSend.size() + 4);
-        Mtx_Lock(mtx_Map_User);
-        Map_User.insert(pair<string, SOCKET>(id, sClient));
-        Mtx_Unlock(mtx_Map_User);
-        return 0;
+        else
+        {
+            Value vUsername(Result[0][0].c_str(), DocSend.GetAllocator());
+            DocSend.AddMember("command", "login_return", DocSend.GetAllocator());
+            DocSend.AddMember("status", "success", DocSend.GetAllocator());
+            DocSend.AddMember("username", vUsername, DocSend.GetAllocator());
+            Mtx_Lock(mtx_Map_User);
+            Map_User.insert(pair<string, SOCKET>(id, sClient));
+            Mtx_Unlock(mtx_Map_User);
+        }
     }
     else
     {
-        return -1;
+        DocSend.AddMember("command", "login_return", DocSend.GetAllocator());
+        DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+        DocSend.AddMember("detail", "wrong Json", DocSend.GetAllocator());
     }
-
+    StringBuffer buffer;
+    PrettyWriter<StringBuffer> writer(buffer);
+    DocSend.Accept(writer);
+    string JsonSend = buffer.GetString();
+    Packet Packet_Send;
+    memset(Packet_Send.Data, 0, BUF_SIZE);
+    Packet_Send.Length = JsonSend.size();
+    memcpy(Packet_Send.Data, JsonSend.c_str(), JsonSend.size());
+    Sock.Send(sClient, (char*)&Packet_Send, JsonSend.size() + 4);
+    return 0;
 }
 
 
@@ -122,9 +127,7 @@ int Login(const char* JsonData, SOCKET sClient)
 int Logout(const char* JsonData, SOCKET sClient)
 {
     Document DocReceive;
-    Document DocSend;
     DocReceive.Parse(JsonData);
-
     if (DocReceive.HasMember("id"))
     {
         Value &value1 = DocReceive["id"];
@@ -139,7 +142,7 @@ int Logout(const char* JsonData, SOCKET sClient)
             Sock.Close(sClient);
             return 0;
         }
-        else
+        else   //理论上不用管
         {
             return -1;
         }
@@ -157,6 +160,7 @@ int AddFriend(const char* JsonData, SOCKET sClient)
 {
     Document DocReceive;
     Document DocSend;
+    DocSend.SetObject();
     int nRow;
     DocReceive.Parse(JsonData);
     if (DocReceive.HasMember("id") && DocReceive.HasMember("friend_id") && DocReceive.HasMember("status"))
@@ -178,7 +182,9 @@ int AddFriend(const char* JsonData, SOCKET sClient)
                 Conn.ExecSQL(SQL.c_str(), Result, nRow);
                 if (nRow == 0)//无此用户
                 {
-                    return -1;
+                    DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
+                    DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+                    DocSend.AddMember("datail", "wrong friend_id", DocSend.GetAllocator());
                 }
                 else
                 {
@@ -188,29 +194,47 @@ int AddFriend(const char* JsonData, SOCKET sClient)
                     {
                         SQL = R"(insert into friendlist values(")" + id + R"(",")" + friend_id + R"(",")" + status + R"(");)";
                         Conn.ExecSQL(SQL.c_str(), Result, nRow);
+                        DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
+                        DocSend.AddMember("status", "success", DocSend.GetAllocator());
                     }
                     else  //已经有该好友
                     {
-                        return -1;
+                        DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
+                        DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+                        DocSend.AddMember("datail", "already have this friend", DocSend.GetAllocator());
                     }
                 }
-                return 0;
             }
             else  //用户与socket不匹配
             {
-                return -1;
+                DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
+                DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+                DocSend.AddMember("datail", "not logged in or using different socket", DocSend.GetAllocator());
             }
         }
         else  //未登录
         {
-            return -1;
+            DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
+            DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+            DocSend.AddMember("datail", "not logged in", DocSend.GetAllocator());
         }
     }
     else //json包错误
     {
-        return -1;
+        DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
+        DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+        DocSend.AddMember("datail", "wrong Json", DocSend.GetAllocator());
     }
-
+    StringBuffer buffer;
+    PrettyWriter<StringBuffer> writer(buffer);
+    DocSend.Accept(writer);
+    string JsonSend = buffer.GetString();
+    Packet Packet_Send;
+    memset(Packet_Send.Data, 0, BUF_SIZE);
+    Packet_Send.Length = JsonSend.size();
+    memcpy(Packet_Send.Data, JsonSend.c_str(), JsonSend.size());
+    Sock.Send(sClient, (char*)&Packet_Send, JsonSend.size() + 4);
+    return 0;
 
 }
 
@@ -255,41 +279,45 @@ int ListFriend(const char* JsonData, SOCKET sClient)
                         Array_Friends.PushBack(Temp, DocSend.GetAllocator());
                     }
                     DocSend.AddMember("friends", Array_Friends, DocSend.GetAllocator());
-
-                    StringBuffer buffer;
-                    PrettyWriter<StringBuffer> writer(buffer);
-                    DocSend.Accept(writer);
-                    string Data = buffer.GetString();
-
-                    Packet Packet_Send;
-                    memset(&Packet_Send, 0, BUF_SIZE + 4);
-                    Packet_Send.Length = Data.size();
-                    memcpy(Packet_Send.Data, Data.c_str(), Data.size());
-                    Sock.Send(sClient, (char*)&Packet_Send, Data.size() + 4);
-
-                    return 0;
                 }
                 else  //无此用户
                 {
-                    return -1;
+                    DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
+                    DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+                    DocSend.AddMember("datail", "wrong id", DocSend.GetAllocator());
                 }
             }
             else
             {
-                return -1;
+                DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
+                DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+                DocSend.AddMember("datail", "not logged in or using different socket", DocSend.GetAllocator());
             }
 
         }
         else
         {
-            return -1;
+            DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
+            DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+            DocSend.AddMember("datail", "not logged in", DocSend.GetAllocator());
         }
     }
     else   //json包错误
     {
-        return -1;
+        DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
+        DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+        DocSend.AddMember("datail", "wrong Json", DocSend.GetAllocator());
     }
-
+    StringBuffer buffer;
+    PrettyWriter<StringBuffer> writer(buffer);
+    DocSend.Accept(writer);
+    string Data = buffer.GetString();
+    Packet Packet_Send;
+    memset(&Packet_Send, 0, BUF_SIZE + 4);
+    Packet_Send.Length = Data.size();
+    memcpy(Packet_Send.Data, Data.c_str(), Data.size());
+    Sock.Send(sClient, (char*)&Packet_Send, Data.size() + 4);
+    return 0;
 }
 
 
@@ -297,46 +325,57 @@ int SendMessage(const char* JsonData, SOCKET sClient)
 {
     Document DocReceive;
     Document DocSend;
+    DocSend.SetObject();
     int nRow;
     DocReceive.Parse(JsonData);
-    if (DocReceive.IsObject())
+
+    if (DocReceive.HasMember("src") && DocReceive.HasMember("dst") && DocReceive.HasMember("message"))
     {
-        if (DocReceive.HasMember("src") && DocReceive.HasMember("dst") && DocReceive.HasMember("message"))
+        Value &value1 = DocReceive["src"];
+        Value &value2 = DocReceive["dst"];
+        Value &value3 = DocReceive["message"];
+        string src = value1.GetString();
+        string dst = value2.GetString();
+        string message = value3.GetString();
+
+        string SQL = R"(select * from friendlist where id=")" + src + R"(")" + R"(and friend_id=")" + dst + R"(";)";
+        vector<vector<string>> Result(1);
+        Conn.ExecSQL(SQL.c_str(), Result, nRow);
+
+        if (nRow == 0)  //无此好友关系
         {
-            Value &value1 = DocReceive["src"];
-            Value &value2 = DocReceive["dst"];
-            Value &value3 = DocReceive["message"];
-            string src = value1.GetString();
-            string dst = value2.GetString();
-            string message = value3.GetString();
-
-            string SQL = R"(select * from friendlist where id=")" + src + R"(")" + R"(and friend_id=")" + dst + R"(";)";
-            vector<vector<string>> Result(1);
-            Conn.ExecSQL(SQL.c_str(), Result, nRow);
-
-            if (nRow == 0)  //无此好友关系
-            {
-                return -1;
-            }
-            else
-            {
-                Packet Packet_send;
-                memset(&Packet_send, 0, BUF_SIZE + 4);
-                Packet_send.Length = strlen(JsonData);
-                memcpy(Packet_send.Data, JsonData, strlen(JsonData));
-                Mtx_Lock(mtx_Packet);
-                Packet_Queue.push(Packet_send);
-                Mtx_Unlock(mtx_Packet);
-                return 0;//缺回复json包
-            }
+            DocSend.AddMember("command", "send_message_return", DocSend.GetAllocator());
+            DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+            DocSend.AddMember("datail", "dst not in friend_list", DocSend.GetAllocator());
         }
-        else  //json错误
+        else
         {
-            return -1;
+            DocSend.AddMember("command", "send_message_return", DocSend.GetAllocator());
+            DocSend.AddMember("status", "success", DocSend.GetAllocator());
+            Packet Packet_send;
+            memset(&Packet_send, 0, BUF_SIZE + 4);
+            Packet_send.Length = strlen(JsonData);
+            memcpy(Packet_send.Data, JsonData, strlen(JsonData));
+            Mtx_Lock(mtx_Packet);
+            Packet_Queue.push(Packet_send);
+            Mtx_Unlock(mtx_Packet);
         }
     }
     else  //json错误
     {
-        return -1;
+        DocSend.AddMember("command", "send_message_return", DocSend.GetAllocator());
+        DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+        DocSend.AddMember("datail", "wrong Json", DocSend.GetAllocator());
     }
+
+    StringBuffer buffer;
+    PrettyWriter<StringBuffer> writer(buffer);
+    DocSend.Accept(writer);
+    string Data = buffer.GetString();
+    Packet Packet_Send;
+    memset(&Packet_Send, 0, BUF_SIZE + 4);
+    Packet_Send.Length = Data.size();
+    memcpy(Packet_Send.Data, Data.c_str(), Data.size());
+    Sock.Send(sClient, (char*)&Packet_Send, Data.size() + 4);
+    return 0;
 }
