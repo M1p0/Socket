@@ -9,5 +9,7 @@
     ".json": "application/json",
     "png": "application/x-png",
     ".css":"text/css",
-    ".js":"application/x-javascript"
+    ".js":"application/x-javascript",
+    ".mp3":"audio/mp3",
+    ".xml":"text/xml"
 }
