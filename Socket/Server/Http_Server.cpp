@@ -81,8 +81,8 @@ void MyHttpServerHandler(struct evhttp_request* req, void* arg)
             {
                 if (document.HasMember("command"))
                 {
-                    Value &value1 = document["command"];
-                    string command = value1.GetString();
+                    Value &vcommand = document["command"];
+                    string command = vcommand.GetString();
                     unordered_map<string, int(*)(const char*, char*)>::iterator it;  //调用已有api
                     it = Map_Http_API.find(command);
                     if (it != Map_Http_API.end())

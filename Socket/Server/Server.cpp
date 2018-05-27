@@ -45,12 +45,12 @@ int Forward()
 
             if (document.HasMember("src") && document.HasMember("dst") && document.HasMember("message"))
             {
-                Value &value1 = document["src"];
-                Value &value2 = document["dst"];
-                Value &value3 = document["message"];
-                string src = value1.GetString();
-                string dst = value2.GetString();
-                string message = value3.GetString();
+                Value &vsrc = document["src"];
+                Value &vdst = document["dst"];
+                Value &vmessage = document["message"];
+                string src = vsrc.GetString();
+                string dst = vdst.GetString();
+                string message = vmessage.GetString();
                 unordered_map<string, SOCKET>::iterator it;
                 Mtx_Lock(mtx_Map_User);
                 it = Map_User.find(dst);
@@ -121,6 +121,18 @@ int Receiver(SOCKET sClient)
         {
             cout << "Android client disconnected" << endl;
             //´ÓmapÖÐÉ¾³ý
+            unordered_map<string, SOCKET>::iterator it;
+            for (it = Map_User.begin(); it != Map_User.end(); )
+            {
+                if (it->second==sClient)
+                {
+                    Map_User.erase(it++);
+                }
+                else
+                {
+                    it++;
+                }
+            }
             Sock.Close(sClient);
             return -1;
         }

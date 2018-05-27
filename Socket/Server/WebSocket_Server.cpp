@@ -26,10 +26,10 @@ int WS_Login(const char* JsonData, WS_Info Info)
 
     if (DocReceive.HasMember("id") && DocReceive.HasMember("password"))
     {
-        Value &value1 = DocReceive["id"];
-        Value &value2 = DocReceive["password"];
-        string id = value1.GetString();
-        string password = value2.GetString();
+        Value &vid = DocReceive["id"];
+        Value &vpassword = DocReceive["password"];
+        string id = vid.GetString();
+        string password = vpassword.GetString();
         string SQL = R"(select username from user where id=")" + id + R"(")" + R"(and password=")" + password + R"(";)";
 
         vector<vector<string>> Result(1);
@@ -76,12 +76,12 @@ int WS_SendMessage(const char* JsonData, WS_Info Info)
 
     if (DocReceive.HasMember("src") && DocReceive.HasMember("dst") && DocReceive.HasMember("message"))
     {
-        Value &value1 = DocReceive["src"];
-        Value &value2 = DocReceive["dst"];
-        Value &value3 = DocReceive["message"];
-        string src = value1.GetString();
-        string dst = value2.GetString();
-        string message = value3.GetString();
+        Value &vsrc = DocReceive["src"];
+        Value &vdst = DocReceive["dst"];
+        Value &vmessage = DocReceive["message"];
+        string src = vsrc.GetString();
+        string dst = vdst.GetString();
+        string message = vmessage.GetString();
 
 
         unordered_map<string, WS_Info>::iterator it;
@@ -144,7 +144,19 @@ void OnOpen(WebsocketServer *server, websocketpp::connection_hdl hdl)
 }
 
 void OnClose(WebsocketServer *server, websocketpp::connection_hdl hdl)
-{//ÒÆ³ýÓÃ»§
+{
+    unordered_map<string, WS_Info>::iterator it;
+    for (it=Map_WS_User.begin();it!=Map_WS_User.end();)
+    {
+        if (it->second.server==server)
+        {
+            Map_WS_User.erase(it++);
+        }
+        else
+        {
+            it++;
+        }
+    }
     cout << "Web client disconnected" << endl;
 }
 
@@ -160,8 +172,8 @@ void OnMessage(WebsocketServer *server, websocketpp::connection_hdl hdl, message
     {
         if (DocReceive.HasMember("command"))
         {
-            Value &value1 = DocReceive["command"];
-            string command = value1.GetString();
+            Value &vcommand = DocReceive["command"];
+            string command = vcommand.GetString();
             unordered_map<string, int(*)(const char*, WS_Info)>::iterator it;
             it = Map_WS_API.find(command);
             if (it != Map_WS_API.end())

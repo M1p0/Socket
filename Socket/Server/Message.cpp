@@ -33,10 +33,10 @@ int Logon(const char* JsonData, SOCKET sClient)
 
     if (DocReceive.HasMember("username") && DocReceive.HasMember("password"))
     {
-        Value &value1 = DocReceive["username"];
-        Value &value2 = DocReceive["password"];
-        string username = value1.GetString();
-        string password = value2.GetString();
+        Value &vusername = DocReceive["username"];
+        Value &vpassword = DocReceive["password"];
+        string username = vusername.GetString();
+        string password = vpassword.GetString();
         string SQL = R"(begin;)";
         SQL = SQL + R"(insert into user(username,password) values(")" + username + R"(",")" + password + R"(");)";
         SQL = SQL + R"(select id from user order by ID DESC limit 1;)";
@@ -79,10 +79,10 @@ int Login(const char* JsonData, SOCKET sClient)
     DocReceive.Parse(JsonData);
     if (DocReceive.HasMember("id") && DocReceive.HasMember("password"))
     {
-        Value &value1 = DocReceive["id"];
-        Value &value2 = DocReceive["password"];
-        string id = value1.GetString();
-        string password = value2.GetString();
+        Value &vid = DocReceive["id"];
+        Value &vpassword = DocReceive["password"];
+        string id = vid.GetString();
+        string password = vpassword.GetString();
         string SQL = R"(select username from user where id=")" + id + R"(")" + R"(and password=")" + password + R"(";)";
 
         vector<vector<string>> Result(1);
@@ -130,14 +130,14 @@ int Logout(const char* JsonData, SOCKET sClient)
     DocReceive.Parse(JsonData);
     if (DocReceive.HasMember("id"))
     {
-        Value &value1 = DocReceive["id"];
-        string id = value1.GetString();
+        Value &vid = DocReceive["id"];
+        string id = vid.GetString();
         unordered_map<string, SOCKET>::iterator it;
         it = Map_User.find(id);
         if (it->second == sClient)
         {
             Mtx_Lock(mtx_Map_User);
-            Map_User.erase(it);
+            Map_User.erase(it++);
             Mtx_Unlock(mtx_Map_User);
             Sock.Close(sClient);
             return 0;
@@ -165,12 +165,12 @@ int AddFriend(const char* JsonData, SOCKET sClient)
     DocReceive.Parse(JsonData);
     if (DocReceive.HasMember("id") && DocReceive.HasMember("friend_id") && DocReceive.HasMember("status"))
     {
-        Value &value1 = DocReceive["id"];
-        Value &value2 = DocReceive["friend_id"];
-        Value &value3 = DocReceive["status"];
-        string id = value1.GetString();
-        string friend_id = value2.GetString();
-        string status = value3.GetString();
+        Value &vid = DocReceive["id"];
+        Value &vfriend_id = DocReceive["friend_id"];
+        Value &vstatus = DocReceive["status"];
+        string id = vid.GetString();
+        string friend_id = vfriend_id.GetString();
+        string status = vstatus.GetString();
         unordered_map<string, SOCKET>::iterator it;
         it = Map_User.find(id);
         if (it != Map_User.end())  //¼ì²éÊÇ·ñµÇÂ½
@@ -249,8 +249,8 @@ int ListFriend(const char* JsonData, SOCKET sClient)
     DocReceive.Parse(JsonData);
     if (DocReceive.HasMember("id"))
     {
-        Value &value1 = DocReceive["id"];
-        string id = value1.GetString();
+        Value &vid = DocReceive["id"];
+        string id = vid.GetString();
         unordered_map<string, SOCKET>::iterator it;
         it = Map_User.find(id);
         if (it != Map_User.end())  //¼ì²éÊÇ·ñµÇÂ½
@@ -331,12 +331,12 @@ int SendMessage(const char* JsonData, SOCKET sClient)
 
     if (DocReceive.HasMember("src") && DocReceive.HasMember("dst") && DocReceive.HasMember("message"))
     {
-        Value &value1 = DocReceive["src"];
-        Value &value2 = DocReceive["dst"];
-        Value &value3 = DocReceive["message"];
-        string src = value1.GetString();
-        string dst = value2.GetString();
-        string message = value3.GetString();
+        Value &vsrc = DocReceive["src"];
+        Value &vdst = DocReceive["dst"];
+        Value &vmessage = DocReceive["message"];
+        string src = vsrc.GetString();
+        string dst = vdst.GetString();
+        string message = vmessage.GetString();
 
 
         unordered_map<string, SOCKET>::iterator it;

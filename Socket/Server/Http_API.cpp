@@ -18,10 +18,10 @@ int Logon_API(const char* JsonData, char* JsonSend)
 
     if (DocReceive.HasMember("username") && DocReceive.HasMember("password"))
     {
-        Value &value1 = DocReceive["username"];
-        Value &value2 = DocReceive["password"];
-        string username = value1.GetString();
-        string password = value2.GetString();
+        Value &vusername = DocReceive["username"];
+        Value &vpassword = DocReceive["password"];
+        string username = vusername.GetString();
+        string password = vpassword.GetString();
         string SQL = R"(begin;)";
         SQL = SQL + R"(insert into user(username,password) values(")" + username + R"(",")" + password + R"(");)";
         SQL = SQL + R"(select id from user order by ID DESC limit 1;)";
@@ -63,10 +63,10 @@ int Login_API(const char* JsonData, char* JsonSend)
     DocReceive.Parse(JsonData);
     if (DocReceive.HasMember("id") && DocReceive.HasMember("password"))
     {
-        Value &value1 = DocReceive["id"];
-        Value &value2 = DocReceive["password"];
-        string id = value1.GetString();
-        string password = value2.GetString();
+        Value &vid = DocReceive["id"];
+        Value &vpassword = DocReceive["password"];
+        string id = vid.GetString();
+        string password = vpassword.GetString();
         string SQL = R"(select username from user where id=")" + id + R"(")" + R"(and password=")" + password + R"(";)";
         vector<vector<string>> Result(1);
         Conn.ExecSQL(SQL.c_str(), Result, nRow);
@@ -108,12 +108,12 @@ int AddFriend_API(const char* JsonData, char* JsonSend)
     DocReceive.Parse(JsonData);
     if (DocReceive.HasMember("id") && DocReceive.HasMember("friend_id") && DocReceive.HasMember("status"))
     {
-        Value &value1 = DocReceive["id"];
-        Value &value2 = DocReceive["friend_id"];
-        Value &value3 = DocReceive["status"];
-        string id = value1.GetString();
-        string friend_id = value2.GetString();
-        string status = value3.GetString();
+        Value &vid = DocReceive["id"];
+        Value &vfriend_id = DocReceive["friend_id"];
+        Value &vstatus = DocReceive["status"];
+        string id = vid.GetString();
+        string friend_id = vfriend_id.GetString();
+        string status = vstatus.GetString();
 
         string SQL = R"(select * from user where id=")" + friend_id + R"(";)";
         vector<vector<string>> Result(10);
@@ -168,8 +168,8 @@ int ListFriend_API(const char* JsonData, char* JsonSend)
     DocReceive.Parse(JsonData);
     if (DocReceive.HasMember("id"))
     {
-        Value &value1 = DocReceive["id"];
-        string id = value1.GetString();
+        Value &vid = DocReceive["id"];
+        string id = vid.GetString();
 
         Value vid;
         vid.SetString(id.c_str(), id.size(), DocSend.GetAllocator());
