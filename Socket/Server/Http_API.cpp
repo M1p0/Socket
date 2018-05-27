@@ -203,7 +203,7 @@ int ListFriend_API(const char* JsonData, char* JsonSend)
         }
         else  //无此用户
         {
-            DocSend.AddMember("command", "list_friend_rtn", DocSend.GetAllocator());
+            DocSend.AddMember("command", "list_friend_return", DocSend.GetAllocator());
             DocSend.AddMember("status", "fail", DocSend.GetAllocator());
             DocSend.AddMember("datail", "wrong id", DocSend.GetAllocator());
             StringBuffer buffer;
@@ -215,7 +215,7 @@ int ListFriend_API(const char* JsonData, char* JsonSend)
     }
     else   //json包错误
     {
-        DocSend.AddMember("command", "list_friend_rtn", DocSend.GetAllocator());
+        DocSend.AddMember("command", "list_friend_return", DocSend.GetAllocator());
         DocSend.AddMember("status", "fail", DocSend.GetAllocator());
         DocSend.AddMember("datail", "wrong json", DocSend.GetAllocator());
         StringBuffer buffer;

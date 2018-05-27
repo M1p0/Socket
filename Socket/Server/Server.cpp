@@ -18,18 +18,12 @@
 #include "Utils.h"
 #include "CFileIO.h"
 #include "Http_Server.h"
-
 using namespace std;
-#ifdef _WIN32
-#pragma comment(lib,"Lib.lib")
-#endif
 
 mutex mtx_sClient;
 mutex mtx_Packet;
 mutex mtx_Map_User;
 queue <Packet> Packet_Queue;
-
-
 MSocket Sock;
 MDatabase Conn;
 CFileIO File;

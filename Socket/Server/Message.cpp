@@ -282,29 +282,29 @@ int ListFriend(const char* JsonData, SOCKET sClient)
                 }
                 else  //无此用户
                 {
-                    DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
+                    DocSend.AddMember("command", "list_friend_return", DocSend.GetAllocator());
                     DocSend.AddMember("status", "fail", DocSend.GetAllocator());
                     DocSend.AddMember("datail", "wrong id", DocSend.GetAllocator());
                 }
             }
             else
             {
-                DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
+                DocSend.AddMember("command", "list_friend_return", DocSend.GetAllocator());
                 DocSend.AddMember("status", "fail", DocSend.GetAllocator());
-                DocSend.AddMember("datail", "not logged in or using different socket", DocSend.GetAllocator());
+                DocSend.AddMember("datail", "socket not match", DocSend.GetAllocator());
             }
 
         }
         else
         {
-            DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
+            DocSend.AddMember("command", "list_friend_return", DocSend.GetAllocator());
             DocSend.AddMember("status", "fail", DocSend.GetAllocator());
             DocSend.AddMember("datail", "not logged in", DocSend.GetAllocator());
         }
     }
     else   //json包错误
     {
-        DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
+        DocSend.AddMember("command", "list_friend_return", DocSend.GetAllocator());
         DocSend.AddMember("status", "fail", DocSend.GetAllocator());
         DocSend.AddMember("datail", "wrong Json", DocSend.GetAllocator());
     }
@@ -338,27 +338,39 @@ int SendMessage(const char* JsonData, SOCKET sClient)
         string dst = value2.GetString();
         string message = value3.GetString();
 
-        string SQL = R"(select * from friendlist where id=")" + src + R"(")" + R"(and friend_id=")" + dst + R"(";)";
-        vector<vector<string>> Result(1);
-        Conn.ExecSQL(SQL.c_str(), Result, nRow);
 
-        if (nRow == 0)  //无此好友关系
+        unordered_map<string, SOCKET>::iterator it;
+        it = Map_User.find(src);
+        if (it != Map_User.end())  //检查是否登陆
+        {
+            string SQL = R"(select * from friendlist where id=")" + src + R"(")" + R"(and friend_id=")" + dst + R"(";)";
+            vector<vector<string>> Result(1);
+            Conn.ExecSQL(SQL.c_str(), Result, nRow);
+
+            if (nRow == 0)  //无此好友关系
+            {
+                DocSend.AddMember("command", "send_message_return", DocSend.GetAllocator());
+                DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+                DocSend.AddMember("datail", "dst not in friend_list", DocSend.GetAllocator());
+            }
+            else
+            {
+                DocSend.AddMember("command", "send_message_return", DocSend.GetAllocator());
+                DocSend.AddMember("status", "success", DocSend.GetAllocator());
+                Packet Packet_send;
+                memset(&Packet_send, 0, BUF_SIZE + 4);
+                Packet_send.Length = strlen(JsonData);
+                memcpy(Packet_send.Data, JsonData, strlen(JsonData));
+                Mtx_Lock(mtx_Packet);
+                Packet_Queue.push(Packet_send);
+                Mtx_Unlock(mtx_Packet);
+            }
+        }
+        else   //socket错误
         {
             DocSend.AddMember("command", "send_message_return", DocSend.GetAllocator());
             DocSend.AddMember("status", "fail", DocSend.GetAllocator());
-            DocSend.AddMember("datail", "dst not in friend_list", DocSend.GetAllocator());
-        }
-        else
-        {
-            DocSend.AddMember("command", "send_message_return", DocSend.GetAllocator());
-            DocSend.AddMember("status", "success", DocSend.GetAllocator());
-            Packet Packet_send;
-            memset(&Packet_send, 0, BUF_SIZE + 4);
-            Packet_send.Length = strlen(JsonData);
-            memcpy(Packet_send.Data, JsonData, strlen(JsonData));
-            Mtx_Lock(mtx_Packet);
-            Packet_Queue.push(Packet_send);
-            Mtx_Unlock(mtx_Packet);
+            DocSend.AddMember("datail", "not logged in or using different socket", DocSend.GetAllocator());
         }
     }
     else  //json错误
@@ -367,6 +379,7 @@ int SendMessage(const char* JsonData, SOCKET sClient)
         DocSend.AddMember("status", "fail", DocSend.GetAllocator());
         DocSend.AddMember("datail", "wrong Json", DocSend.GetAllocator());
     }
+
 
     StringBuffer buffer;
     PrettyWriter<StringBuffer> writer(buffer);
