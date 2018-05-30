@@ -7,6 +7,7 @@
 #include <MSocket.h>
 #include "MDatabase.h"
 #include <MyEvent.h>
+#include <Public.h>
 using namespace std;
 
 
@@ -16,8 +17,14 @@ extern queue <Packet> Packet_Queue;
 unordered_map<string, WS_Info> Map_WS_User;
 unordered_map<string, int(*)(const char*, WS_Info)> Map_WS_API;
 
+
+
+extern int PushOfflineMessage(const char* id);
+
+
 int WS_Login(const char* JsonData, WS_Info Info)
 {
+    string id = "0";
     Document DocReceive;
     Document DocSend;
     DocSend.SetObject();
@@ -28,7 +35,7 @@ int WS_Login(const char* JsonData, WS_Info Info)
     {
         Value &vid = DocReceive["id"];
         Value &vpassword = DocReceive["password"];
-        string id = vid.GetString();
+        id = vid.GetString();
         string password = vpassword.GetString();
         string SQL = R"(select username from user where id=")" + id + R"(")" + R"(and password=")" + password + R"(";)";
 
@@ -63,6 +70,10 @@ int WS_Login(const char* JsonData, WS_Info Info)
     DocSend.Accept(writer);
     string JsonSend = buffer.GetString();
     Info.server->send(Info.hdl, JsonSend.c_str(), websocketpp::frame::opcode::text);
+    if (id!="0")
+    {
+        PushOfflineMessage(id.c_str());
+    }
     return 0;
 }
 

@@ -99,7 +99,7 @@ int main()
         }
         if (cmd == "send")
         {
-            command = R"({"command":"send_message","src":"10000","dst":"10003","message":"test!!!"})";
+            command = R"({"command":"send_message","src":"10000","dst":"10003","message":"test!"})";
         }
         Packet_Send.Length = command.size();
         memcpy(Packet_Send.Data, command.c_str(), command.size());

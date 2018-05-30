@@ -140,7 +140,16 @@ void MyHttpServerHandler(struct evhttp_request* req, void* arg)
         {
             local[Pos + 1] = '\0';
         }
-        File.Read(local, buffer, 0, BUFFER_SIZE);
+
+        int rtn=File.Read(local, buffer, 0, BUFFER_SIZE);
+        if (rtn == -1)
+        {
+            evhttp_send_reply(req, 404, "file not found", buf);
+            delete[] buffer;
+            evbuffer_free(buf);
+            return;
+        }
+
         int64_t uLength;
         File.GetSize(local, &uLength);
         char szLength[32];

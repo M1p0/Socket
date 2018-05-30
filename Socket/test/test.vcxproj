@@ -73,7 +73,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>..\Lib\MyLib\include\;$(IncludePath)</IncludePath>
-    <LibraryPath>..\Lib\MyLib\lib\;$(LibraryPath)</LibraryPath>
+    <LibraryPath>..\Lib\MyLib\lib\Debug\;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>

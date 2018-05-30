@@ -72,6 +72,10 @@ int Forward()
                     }
                     else //Ð´ÈëÊý¾Ý¿â
                     {
+                        vector<vector<string>> Result(1);
+                        int nRow = 0;
+                        string SQL = R"(insert into offline_message values(")" + src + R"(",")" + dst + R"(",")" + message + R"(");)";
+                        Conn.ExecSQL(SQL.c_str(), Result, nRow);
                         Packet_Queue.pop();
                         Mtx_Unlock(mtx_Packet);
                     }
@@ -124,7 +128,7 @@ int Receiver(SOCKET sClient)
             unordered_map<string, SOCKET>::iterator it;
             for (it = Map_User.begin(); it != Map_User.end(); )
             {
-                if (it->second==sClient)
+                if (it->second == sClient)
                 {
                     Map_User.erase(it++);
                 }

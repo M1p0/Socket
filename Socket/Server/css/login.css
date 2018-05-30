@@ -83,3 +83,9 @@ button{
     display:none;
     margin:50px 30px;
 }
+#login #sign-res{
+    display:none;
+}
+#login #login-res{
+    display:none;
+}

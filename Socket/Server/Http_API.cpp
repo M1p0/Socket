@@ -34,6 +34,7 @@ int Logon_API(const char* JsonData, char* JsonSend)
         DocSend.AddMember("command", "logon_return", DocSend.GetAllocator());
         DocSend.AddMember("status", "success", DocSend.GetAllocator());
         DocSend.AddMember("id", ID, DocSend.GetAllocator());
+        DocSend.AddMember("username", vusername, DocSend.GetAllocator());
         StringBuffer buffer;
         PrettyWriter<StringBuffer> writer(buffer);
         DocSend.Accept(writer);
@@ -76,12 +77,14 @@ int Login_API(const char* JsonData, char* JsonSend)
             DocSend.AddMember("status", "fail", DocSend.GetAllocator());
             DocSend.AddMember("detail", "wrong password or id", DocSend.GetAllocator());
         }
-        Value vUsername(Result[0][0].c_str(), DocSend.GetAllocator());
-        DocSend.SetObject();
-        DocSend.AddMember("command", "login_return", DocSend.GetAllocator());
-        DocSend.AddMember("status", "success", DocSend.GetAllocator());
-        DocSend.AddMember("username", vUsername, DocSend.GetAllocator());
-
+        else
+        {
+            Value vUsername(Result[0][0].c_str(), DocSend.GetAllocator());
+            DocSend.SetObject();
+            DocSend.AddMember("command", "login_return", DocSend.GetAllocator());
+            DocSend.AddMember("status", "success", DocSend.GetAllocator());
+            DocSend.AddMember("username", vUsername, DocSend.GetAllocator());
+        }
     }
     else
     {
@@ -171,7 +174,6 @@ int ListFriend_API(const char* JsonData, char* JsonSend)
         Value &vid = DocReceive["id"];
         string id = vid.GetString();
 
-        Value vid;
         vid.SetString(id.c_str(), id.size(), DocSend.GetAllocator());
         string SQL = R"(select * from friendlist where id=")" + id + R"(";)";
         vector<vector<string>> Result(1024);  //×î¶à1024

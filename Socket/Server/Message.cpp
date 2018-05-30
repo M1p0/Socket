@@ -22,6 +22,61 @@ extern queue <Packet> Packet_Queue;
 extern MSocket Sock;
 extern MDatabase Conn;
 extern unordered_map<string, SOCKET> Map_User;
+
+
+
+int PushOfflineMessage(const char* id)
+{
+    MSleep(1, "s");
+    int nRow = 0;
+    string ID = id;
+    string SQL = R"(select * from offline_message where dst=")" + ID + R"(";)";
+    vector<vector<string>> Result(1024);
+    Conn.ExecSQL(SQL.c_str(), Result, nRow);
+
+    if (nRow == 0)
+    {
+        return 0;
+    }
+    else
+    {
+        for (int i = 0; i < nRow; i++)
+        {
+            Document DocSend;
+            DocSend.SetObject();
+            Value vsrc;
+            Value vdst;
+            Value vmessage;
+            string src = Result[i][0];
+            string dst = Result[i][1];
+            string message = Result[i][2];
+            vsrc.SetString(src.c_str(), src.size(), DocSend.GetAllocator());
+            vdst.SetString(dst.c_str(), dst.size(), DocSend.GetAllocator());
+            vmessage.SetString(message.c_str(), message.size(), DocSend.GetAllocator());
+            DocSend.AddMember("command", "send_message", DocSend.GetAllocator());
+            DocSend.AddMember("src", vsrc, DocSend.GetAllocator());
+            DocSend.AddMember("dst", vdst, DocSend.GetAllocator());
+            DocSend.AddMember("message", vmessage, DocSend.GetAllocator());
+
+            StringBuffer buffer;
+            PrettyWriter<StringBuffer> writer(buffer);
+            DocSend.Accept(writer);
+            string JsonSend = buffer.GetString();
+            Packet Packet_send;
+            memset(&Packet_send.Data, 0, BUF_SIZE);
+            Packet_send.Length = JsonSend.size();
+            memcpy(Packet_send.Data, JsonSend.c_str(), JsonSend.size());
+            Mtx_Lock(mtx_Packet);
+            Packet_Queue.push(Packet_send);
+            Mtx_Unlock(mtx_Packet);
+            SQL = R"(delete from offline_message where message=")"+ message+R"(")"+R"( and dst=")"+dst+R"(";)";  //验证时间
+            Conn.ExecSQL(SQL.c_str(), Result, nRow);
+        }
+    }
+    return 0;
+}
+
+
 int Logon(const char* JsonData, SOCKET sClient)
 {
 
@@ -72,6 +127,7 @@ int Logon(const char* JsonData, SOCKET sClient)
 
 int Login(const char* JsonData, SOCKET sClient)
 {
+    string id = "0";
     Document DocReceive;
     Document DocSend;
     DocSend.SetObject();
@@ -81,7 +137,7 @@ int Login(const char* JsonData, SOCKET sClient)
     {
         Value &vid = DocReceive["id"];
         Value &vpassword = DocReceive["password"];
-        string id = vid.GetString();
+        id = vid.GetString();
         string password = vpassword.GetString();
         string SQL = R"(select username from user where id=")" + id + R"(")" + R"(and password=")" + password + R"(";)";
 
@@ -102,6 +158,8 @@ int Login(const char* JsonData, SOCKET sClient)
             Mtx_Lock(mtx_Map_User);
             Map_User.insert(pair<string, SOCKET>(id, sClient));
             Mtx_Unlock(mtx_Map_User);
+            MSleep(10, "ms");
+
         }
     }
     else
@@ -119,7 +177,12 @@ int Login(const char* JsonData, SOCKET sClient)
     Packet_Send.Length = JsonSend.size();
     memcpy(Packet_Send.Data, JsonSend.c_str(), JsonSend.size());
     Sock.Send(sClient, (char*)&Packet_Send, JsonSend.size() + 4);
+    if (id!="0")
+    {
+        PushOfflineMessage(id.c_str());
+    }
     return 0;
+    
 }
 
 
@@ -392,3 +455,4 @@ int SendMessage(const char* JsonData, SOCKET sClient)
     Sock.Send(sClient, (char*)&Packet_Send, Data.size() + 4);
     return 0;
 }
+

@@ -1,0 +1,101 @@
+
+//发送内容模板
+<div class="chat-content">
+    <div class="chart-time">20:10</div>
+    <div class="content">
+        <div class="avatar"><img></div>
+        <p class="chat_nick">111</p>
+        <p class="chat_content ">111</p></div>
+</div>
+
+
+//chartlist 模板
+<li class="list-item list">
+    <div class="avatar">
+        <img>
+    </div>
+    <p class="nick">111</p>
+    <p class="msg">111</p>
+</li>
+
+
+<div class="chat-panel" id="chatPanel' + thisId + '">
+    <div class="top">
+        <div class="head-content">
+            <header class="chat-header">
+                <h1>' + thisId + '</h1>
+                <button id="closebtn' + thisId + '" class="closebtn">关闭</button>
+            </header>
+            <div id="chat-content' + thisId + '" class="chat-content">
+                <div class="content">
+                    <div class="avatar"><img></div>
+                    <p class="chat_nick">' + data.src + '</p>
+                    <p class="chat_content ">' + data.message + '</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer class="chat-footer">
+        <input id="input' + thisId + '" class="_input" type="text" maxlength="10">
+        <button id="sendbtn' + thisId + '" class="sendbtn">发送</button>
+    </footer>
+</div>
+
+
+
+var data = JSON.parse(e.data);
+        if(data.command === "send_message"){
+            var chatLi = document.getElementById("chat-list"+data.src);
+            msg[data.src] =  msg[data.src].push(data.message) || [data.msg];
+            if (chatLi) {
+                var lastmsg = document.getElementById("lastmsg" + data.src);
+                lastmsg.innerHTML = data.message;
+                
+            } else {
+                chatUL.innerHTML += '<li id="chat-list' + data.src + '" class="chat-list-item list-item list"><div class="avatar"><img></div><p class="nick">' + data.src + '</p><p id="lastmsg' + data.src + '" class="msg">' + data.message + '</p></li>';
+                var chatLi = document.getElementsByClassName("chat-list-item");
+                for(var i=0,len=chatLi.length;i<len;i++){
+                    chatLi[i].addEventListener("click",function(){
+        
+                        var thisId = this.id.split("chat-list")[1];
+                        var chatPanelId = document.getElementById("chatPanel" + thisId);
+                        if(chatPanelId){
+                            var aChatPanel = document.getElementsByClassName("chat-panel");
+                            if (aChatPanel.length !== 0) {
+                                for (var j = 0, l = aChatPanel.length; j < l; j++) {
+                                    aChatPanel[j].style.display = "none";
+                                }
+                            }
+                            chatPanelId.style.display = "block";
+                            addPanelEvent(thisId);
+                        }else{
+
+                            var chatContent = document.getElementById('chat-content' + data.src);
+                            if(chatContent){
+                                chatContent.innerHTML += '<div class="content"><div class="avatar"><img></div><p class="chat_nick">' + data.src + '</p><p class="chat_content ">' + data.message + '</p></div>';
+                            }else{
+                                oContainer.innerHTML += '<div class="chat-panel" id="chatPanel' + thisId + '"><div class="top"><div class="head-content"><header class="chat-header"><h1>' + thisId + '</h1><button id="closebtn' + thisId + '" class="closebtn">关闭</button></header><div id="chat-content' + thisId + '" class="chat-content">';
+                                
+                                for(var m=0;m<msg[thisId].length;m++){
+                                    oContainer.innerHTML += '<div class="content"><div class="avatar"><img></div><p class="chat_nick">' + thisId + '</p><p class="chat_content ">' + msg[thisId][m] + '</p></div>';
+                                }
+                                
+                                oContainer.innerHTML += '</div></div></div><footer class="chat-footer"><input id="input' + thisId + '" class="_input" type="text" maxlength="10"><button id="sendbtn' + thisId + '" class="sendbtn">发送</button></footer></div>';
+                            }
+                            
+                
+                            addPanelEvent(thisId);
+                        }
+                    })
+                }
+            }
+            
+        }
+    }
+
+
+
+
+
+    var chatContent = document.getElementById('chat-content' + data.src);
+                chatContent.innerHTML += '<div class="content"><div class="avatar"><img></div><p class="chat_nick">' + data.src + '</p><p class="chat_content ">' + data.message + '</p></div>';

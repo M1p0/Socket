@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MyIM</title>
+    <link rel="stylesheet" href="css/myim.css">
+</head>
+
+<body>
+    <div id="bg">
+        <img class="bg" src="img/bg.jpg" alt="背景" width="1920px" height="1080px">
+    </div>
+    <div id="wrap">
+        <div id="main-container">
+            <div class="main-panel">
+                <div class="tab">
+                    <div class="count">
+                        <div class="avatar">
+                            <img>
+                        </div>
+                        <span id="user" class="user text-ellipsis">骑士先生</span>
+                        <span class="shuoshuo text-ellipsis">...</span>
+                    </div>
+                    <div class="tab-item current">
+                        <header class="tab-header">会话</header>
+                        <div class="tab-content">
+                            <ul id="chart" class="chat-list">
+                                
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="tab-item">
+                        <header class="tab-header">联系人</header>
+                        <div class="tab-content">
+                            <ul id="friend" class="friend-list list">
+                                
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="tab-item">
+                        <header class="tab-header">设置</header>
+                        <div class="tab-content">设置</div>
+                    </div>
+                </div>
+                <footer id="panel-footer">
+                    <ul class="tab-nav">
+                        <li id="session" class="select"><a href="#">会话</a></li>
+                        <li id="contact"><a href="#">联系人</a></li>
+                        <li id="setting"><a href="#">设置</a></li>
+                    </ul>
+                </footer>
+            </div>
+        </div>
+        <div id="container"></div>
+    </div>
+    <script src="js/myim.js"></script>
+</body>
+
+</html>

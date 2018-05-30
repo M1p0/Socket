@@ -11,7 +11,7 @@ var signinUser = document.getElementById("signin-user");
 var signinPw = document.getElementById("signin-pw");
 var signinBtn = document.getElementById("signin-btn");
 
-var url = "http://127.0.0.1:9001/logon";
+var url = "http://127.0.0.1:9001/api";
 var aColor = ["#ddf0ed", "#f2efe6", "#c7ffec", "#f17c67", "#00ff80", "#25c6fc", "3b200c"];
 var aBubble = [];
 var w, h; //浏览器宽高
@@ -85,16 +85,22 @@ signin.addEventListener("click",function(){
 loginBtn.addEventListener("click",function(){
     var user = loginUser.value;
     var pw = loginPw.value;
-    var s = '{"command":"logon","username":"'+user+'","password":"'+pw+'"}';
+    var s = '{"command":"login","id":"'+user+'","password":"'+pw+'"}';
     var len = s.length;
     var xml = new XMLHttpRequest();
     xml.open("POST",url);
-    xml.setRequestHeader("Content-type","application/x-www-form=urlencoded");
+    xml.setRequestHeader("Content-type","application/x-www-form-urlencoded");
     //xml.setRequestHeader("Content-length", len); 
     xml.send(s);
     xml.onreadystatechange = function(){
         if(xml.readyState === 4 && xml.status ===200){
-            console.log(xml.responseText);
+            var res = JSON.parse(xml.responseText);
+            console.log(res)
+            if(res.status === "success"){
+                window.location.href= 'MyIM.html?user='+user+'&pw='+pw+'&username='+res.username;
+            }else{
+                loginRes.style.display = "block";
+            }
         }
     }
 })
@@ -103,16 +109,23 @@ signinBtn.addEventListener("click",function(){
     var user = signinUser.value;
     var pw = signinPw.value;
     var s = '{"command":"logon","username":"'+user+'","password":"'+pw+'"}';
-    console.log(s)
+    var _href = 'MyIm.html?user='+user+'&pw='+pw;
     var len = s.length;
     var xml = new XMLHttpRequest();
     xml.open("POST",url);
-    xml.setRequestHeader("Content-type","application/x-www-form=urlencoded");
+    xml.setRequestHeader("Content-type","application/x-www-form-urlencoded");
     //xml.setRequestHeader("Content-length", len); 
     xml.send(s);
     xml.onreadystatechange = function(){
         if(xml.readyState === 4 && xml.status ===200){
-            console.log(xml.responseText);
+            var res = JSON.parse(xml.responseText);
+            if(res.status === "success"){
+                alert("注册成功,你的id为:"+res.id);
+                signinWrap.style.display = "none";
+                loginWrap.style.display = "block";
+            }else{
+                signRes.style.display = "block";
+            }
         }
     }
 })
