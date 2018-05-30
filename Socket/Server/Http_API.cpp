@@ -185,14 +185,30 @@ int ListFriend_API(const char* JsonData, char* JsonSend)
             Value Array_Friends(kArrayType);
             for (int i = 0; i < nRow; i++)
             {
-                Value Temp(kObjectType);   //临时的object对象   存储friend信息
-                Value vFriend_id;
-                Value vStatus;
-                vFriend_id.SetString(Result[i][1].c_str(), Result[i][1].size(), DocSend.GetAllocator());
-                vStatus.SetString(Result[i][2].c_str(), Result[i][2].size(), DocSend.GetAllocator());
-                Temp.AddMember("id", vFriend_id, DocSend.GetAllocator());
-                Temp.AddMember("status", vStatus, DocSend.GetAllocator());
-                Array_Friends.PushBack(Temp, DocSend.GetAllocator());
+                int num = 0;
+                string Friend_id = Result[i][1];
+                SQL = R"(select username from user where id=")" + Friend_id + R"(";)";
+                vector<vector<string>> Result_Username(1);
+                Conn.ExecSQL(SQL.c_str(), Result_Username, num);
+                if (num != 0)
+                {
+                    Value Temp(kObjectType);   //临时的object对象   存储friend信息
+                    Value vFriend_id;
+                    Value vStatus;
+                    Value vUsername;
+                    vUsername.SetString(Result_Username[0][0].c_str(), Result_Username[0][0].size(), DocSend.GetAllocator());
+                    vFriend_id.SetString(Result[i][1].c_str(), Result[i][1].size(), DocSend.GetAllocator());
+                    vStatus.SetString(Result[i][2].c_str(), Result[i][2].size(), DocSend.GetAllocator());
+                    Temp.AddMember("id", vFriend_id, DocSend.GetAllocator());
+                    Temp.AddMember("username", vUsername, DocSend.GetAllocator());
+                    Temp.AddMember("status", vStatus, DocSend.GetAllocator());
+                    Array_Friends.PushBack(Temp, DocSend.GetAllocator());
+                }
+                else  //清除错误条目
+                {
+                    SQL = R"(delete from friendlist where friend_id=")" + Friend_id + R"(";)";
+                    Conn.ExecSQL(SQL.c_str(), Result_Username, num);  //无返回集
+                }
             }
             DocSend.AddMember("status", "success", DocSend.GetAllocator());
             DocSend.AddMember("friends", Array_Friends, DocSend.GetAllocator());
@@ -200,7 +216,6 @@ int ListFriend_API(const char* JsonData, char* JsonSend)
             PrettyWriter<StringBuffer> writer(buffer);
             DocSend.Accept(writer);
             memcpy(JsonSend, buffer.GetString(), buffer.GetSize());
-
             return 0;
         }
         else  //无此用户
