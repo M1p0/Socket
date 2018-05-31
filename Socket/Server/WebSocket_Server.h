@@ -13,6 +13,7 @@ struct WS_Info
     websocketpp::connection_hdl hdl;
 };
 
+
 void WS_Run();
 int WS_Login(const char* JsonData, WS_Info Info);
 int WS_SendMessage(const char* JsonData, WS_Info Info);

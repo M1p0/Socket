@@ -11,7 +11,7 @@ var signinUser = document.getElementById("signin-user");
 var signinPw = document.getElementById("signin-pw");
 var signinBtn = document.getElementById("signin-btn");
 
-var url = "http://127.0.0.1:9001/api";
+var url = "http://192.168.1.2:9001/api";
 var aColor = ["#ddf0ed", "#f2efe6", "#c7ffec", "#f17c67", "#00ff80", "#25c6fc", "3b200c"];
 var aBubble = [];
 var w, h; //浏览器宽高

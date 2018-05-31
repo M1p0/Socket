@@ -1,5 +1,5 @@
-var httpUrl = "http://127.0.0.1:9001/api";
-var webSocketUrl = "ws://127.0.0.1:9002";
+var httpUrl = "http://192.168.1.2:9001/api";
+var webSocketUrl = "ws://192.168.1.2:9002";
 var id = getQueryStringByName("user");
 var username = getQueryStringByName("username");
 var pw = getQueryStringByName("pw");
@@ -11,6 +11,7 @@ var oContainer = document.getElementById("container");
 var chatUL = document.getElementById("chart");
 var websocket = new WebSocket(webSocketUrl);
 var msg = {};
+var friendUserName = {}
 
 window.addEventListener("DOMContentLoaded", init);
 
@@ -68,11 +69,14 @@ function getFriendList() {
     xml.onreadystatechange = function () {
         if (xml.readyState === 4 && xml.status === 200) {
             var res = JSON.parse(xml.responseText);
+            console.log(res)
             if (res.status === "success") {
                 var friendList = res.friends;
                 for (let i = 0, len = friendList.length; i < len; i++) {
+
                     let item = friendList[i];
-                    friendContent += '<li id="' + item.id + '" class="friend-list-item list-item list"><div class="avatar"><img></div><p class="nick">' + item.id + '</p><p class="shuoshuo">...</p></li>';
+                    friendUserName[item.id] = item.username
+                    friendContent += '<li id="' + item.id + '" class="friend-list-item list-item list"><div class="avatar"><img></div><p class="nick">' + item.username + '</p><p class="shuoshuo">...</p></li>';
                 };
                 friend.innerHTML = friendContent;
                 friend.style.display = "block";
@@ -101,7 +105,7 @@ function friendAddEvent() {
                 chatPanelId.style.display = "block";
                 addPanelEvent(this.id);
             } else {
-                oContainer.innerHTML += '<div class="chat-panel" id="chatPanel' + this.id + '"><div class="top"><div class="head-content"><header class="chat-header"><h1>' + this.id + '</h1><button id="closebtn' + this.id + '" class="closebtn">关闭</button></header><div id="chat-content' + this.id + '" class="chat-content"></div></div></div><footer class="chat-footer"><input id="input' + this.id + '" class="_input" type="text" maxlength="10"><button id="sendbtn' + this.id + '" class="sendbtn">发送</button></footer></div>';
+                oContainer.innerHTML += '<div class="chat-panel" id="chatPanel' + this.id + '"><div class="top"><div class="head-content"><header class="chat-header"><h1>' + friendUserName[this.id] + '</h1><button id="closebtn' + this.id + '" class="closebtn">关闭</button></header><div id="chat-content' + this.id + '" class="chat-content"></div></div></div><footer class="chat-footer"><input id="input' + this.id + '" class="_input" type="text" maxlength="10"><button id="sendbtn' + this.id + '" class="sendbtn">发送</button></footer></div>';
 
                 addPanelEvent(this.id);
 
@@ -131,7 +135,7 @@ function addPanelEvent(thisId) {
             var lastmsg = document.getElementById("lastmsg" + thisId);
             lastmsg.innerHTML = txt;
         } else {
-            chatUL.innerHTML += '<li id="chat-list' + thisId + '" class="chat-list-item list-item list"><div class="avatar"><img></div><p class="nick">' + thisId + '</p><p id="lastmsg' + thisId + '" class="msg">' + txt + '</p></li>';
+            chatUL.innerHTML += '<li id="chat-list' + thisId + '" class="chat-list-item list-item list"><div class="avatar"><img></div><p class="nick">' + friendUserName[thisId] + '</p><p id="lastmsg' + thisId + '" class="msg">' + txt + '</p></li>';
             var chatLi = document.getElementsByClassName("chat-list-item");
             for(var i=0,len=chatLi.length;i<len;i++){
                 addChatListEvent(chatLi[i].id)
@@ -157,7 +161,7 @@ function addChatListEvent(chatLiId){
             chatPanelId.style.display = "block";
             addPanelEvent(thisId);
         }else{
-            oContainer.innerHTML += '<div class="chat-panel" id="chatPanel' + thisId + '"><div class="top"><div class="head-content"><header class="chat-header"><h1>' + thisId + '</h1><button id="closebtn' + thisId + '" class="closebtn">关闭</button></header><div id="chat-content' + thisId + '" class="chat-content"></div></div></div><footer class="chat-footer"><input id="input' + thisId + '" class="_input" type="text" maxlength="10"><button id="sendbtn' + thisId + '" class="sendbtn">发送</button></footer></div>';
+            oContainer.innerHTML += '<div class="chat-panel" id="chatPanel' + thisId + '"><div class="top"><div class="head-content"><header class="chat-header"><h1>' + friendUserName[thisId] + '</h1><button id="closebtn' + thisId + '" class="closebtn">关闭</button></header><div id="chat-content' + thisId + '" class="chat-content"></div></div></div><footer class="chat-footer"><input id="input' + thisId + '" class="_input" type="text" maxlength="10"><button id="sendbtn' + thisId + '" class="sendbtn">发送</button></footer></div>';
 
             addPanelEvent(thisId);
         }
@@ -179,6 +183,7 @@ function createWS() {
 
         var data = JSON.parse(e.data);
         if(data.command === "send_message"){
+            console.log(data);
             var chatLi = document.getElementById("chat-list"+data.src);
             if(msg[data.src]){
                 msg[data.src].push(data.message);
@@ -197,13 +202,13 @@ function createWS() {
                 var chatContent = document.getElementById('chat-content' + data.src);
                 if(chatContent){
                     chatContent.innerHTML += '<div class="content"><div class="avatar"><img></div><p class="chat_nick">' + data.src + '</p><p class="chat_content ">' + data.message + '</p></div>';
-                    chatUL.innerHTML += '<li id="chat-list' + data.src + '" class="chat-list-item list-item list"><div class="avatar"><img></div><p class="nick">' + data.src + '</p><p id="lastmsg' + data.src + '" class="msg">' + data.message + '</p></li>';
+                    chatUL.innerHTML += '<li id="chat-list' + data.src + '" class="chat-list-item list-item list"><div class="avatar"><img></div><p class="nick">' + friendUserName[data.src] + '</p><p id="lastmsg' + data.src + '" class="msg">' + data.message + '</p></li>';
                     var chatLi = document.getElementsByClassName("chat-list-item");
                     for(var i=0,len=chatLi.length;i<len;i++){
                         addChatListEvent(chatLi[i].id)
                     }
                 }else{
-                    chatUL.innerHTML += '<li id="chat-list' + data.src + '" class="chat-list-item list-item list"><div class="avatar"><img></div><p class="nick">' + data.src + '</p><p id="lastmsg' + data.src + '" class="msg">' + data.message + '</p></li>';
+                    chatUL.innerHTML += '<li id="chat-list' + data.src + '" class="chat-list-item list-item list"><div class="avatar"><img></div><p class="nick">' + friendUserName[data.src] + '</p><p id="lastmsg' + data.src + '" class="msg">' + data.message + '</p></li>';
                     var chatLi = document.getElementsByClassName("chat-list-item");
                     for(var i=0,len=chatLi.length;i<len;i++){
                         chatLi[i].onclick = function(){
@@ -226,10 +231,10 @@ function createWS() {
                                     chatContent.innerHTML += '<div class="content"><div class="avatar"><img></div><p class="chat_nick">' + data.src + '</p><p class="chat_content ">' + data.message + '</p></div>';
                                 }else{
                                     var content = "";
-                                    content += '<div class="chat-panel" id="chatPanel' + thisId + '"><div class="top"><div class="head-content"><header class="chat-header"><h1>' + thisId + '</h1><button id="closebtn' + thisId + '" class="closebtn">关闭</button></header><div id="chat-content' + thisId + '" class="chat-content">';
+                                    content += '<div class="chat-panel" id="chatPanel' + thisId + '"><div class="top"><div class="head-content"><header class="chat-header"><h1>' + friendUserName[thisId] + '</h1><button id="closebtn' + thisId + '" class="closebtn">关闭</button></header><div id="chat-content' + thisId + '" class="chat-content">';
                                     
                                     for(var m=0;m<msg[thisId].length;m++){
-                                        content += '<div class="content"><div class="avatar"><img></div><p class="chat_nick">' + thisId + '</p><p class="chat_content ">' + msg[thisId][m] + '</p></div>';
+                                        content += '<div class="content"><div class="avatar"><img></div><p class="chat_nick">' + friendUserName[thisId] + '</p><p class="chat_content ">' + msg[thisId][m] + '</p></div>';
                                     }
                                     
                                     content += '</div></div></div><footer class="chat-footer"><input id="input' + thisId + '" class="_input" type="text" maxlength="10"><button id="sendbtn' + thisId + '" class="sendbtn">发送</button></footer></div>';

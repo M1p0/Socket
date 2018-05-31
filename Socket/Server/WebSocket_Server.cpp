@@ -147,7 +147,6 @@ int WS_SendMessage(const char* JsonData, WS_Info Info)
 
 }
 
-
 void OnOpen(WebsocketServer *server, websocketpp::connection_hdl hdl)
 {
 
@@ -157,9 +156,10 @@ void OnOpen(WebsocketServer *server, websocketpp::connection_hdl hdl)
 void OnClose(WebsocketServer *server, websocketpp::connection_hdl hdl)
 {
     unordered_map<string, WS_Info>::iterator it;
-    for (it=Map_WS_User.begin();it!=Map_WS_User.end();)
+    for (it = Map_WS_User.begin(); it != Map_WS_User.end();)
     {
-        if (it->second.server==server)
+
+        if (server->get_con_from_hdl(it->second.hdl) == server->get_con_from_hdl(hdl))
         {
             Map_WS_User.erase(it++);
         }
@@ -173,7 +173,6 @@ void OnClose(WebsocketServer *server, websocketpp::connection_hdl hdl)
 
 void OnMessage(WebsocketServer *server, websocketpp::connection_hdl hdl, message_ptr msg)
 {
-
     string JsonData = msg->get_payload();
     Document DocReceive;
     Document DocSend;

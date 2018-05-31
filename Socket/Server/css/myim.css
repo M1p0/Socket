@@ -379,3 +379,20 @@ button{
 #friend{
     display:none;
 }
+
+#return{
+
+    display:block;
+    margin: 20px auto;
+    width:200px;
+    height:40px;
+    line-height: 40px;
+    text-align: center;
+    background-color:#396b9e;
+    
+}
+
+#return a{
+    display: block;
+    color:#fff;
+}
