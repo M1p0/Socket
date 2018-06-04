@@ -10,6 +10,8 @@ var tabItem = document.getElementsByClassName("tab-item");
 var oContainer = document.getElementById("container");
 var chatUL = document.getElementById("chart");
 var websocket = new WebSocket(webSocketUrl);
+var add = document.getElementById("add");
+var addPanel = document.getElementById("addpanel");
 var msg = {};
 var friendUserName = {}
 
@@ -23,9 +25,13 @@ function init() {
             tagChange(target);
         }
     });
+
+    add.addEventListener("click",addFriendEvent);
+
     oUser.innerHTML = username;
 
     getFriendList();
+
     createWS();
 };
 
@@ -35,6 +41,30 @@ function init() {
     var h = window.innerHeight;
     document.body.style.height = h + "px";
 })();
+
+function addFriendEvent(){
+    var aChatPanel = document.getElementsByClassName("chat-panel");
+    var btn = document.getElementById("closeAddPanel");
+    var addfriendBtn = document.getElementById("addfriend");
+
+    if (aChatPanel.length !== 0) {
+        for (var j = 0, l = aChatPanel.length; j < l; j++) {
+            aChatPanel[j].style.display = "none";
+        }
+        addPanel.style.display = "block";
+    }
+
+    btn.addEventListener("click",function(){
+        addPanel.style.display = "none";
+    })
+
+    addfriendBtn.addEventListener("click",function(){
+        var friendId = document.getElementById("friendid").value;
+        var s = '{"command":"add_friend","id":"'+id+'","friend_id":"'+friendId+'","status":"0"}';
+        console.log(s)
+        websocket.send(s);
+    })
+}
 
 
 function getQueryStringByName(name) {
@@ -69,7 +99,7 @@ function getFriendList() {
     xml.onreadystatechange = function () {
         if (xml.readyState === 4 && xml.status === 200) {
             var res = JSON.parse(xml.responseText);
-            console.log(res)
+            //console.log(res)
             if (res.status === "success") {
                 var friendList = res.friends;
                 for (let i = 0, len = friendList.length; i < len; i++) {
@@ -178,12 +208,13 @@ function createWS() {
     }
     websocket.onclose = function () { //关闭连接事件
         console.log("关闭websocket连接");
+
     }
     websocket.onmessage = function (e) { //接受信息的事件
 
         var data = JSON.parse(e.data);
+        console.log(data)
         if(data.command === "send_message"){
-            console.log(data);
             var chatLi = document.getElementById("chat-list"+data.src);
             if(msg[data.src]){
                 msg[data.src].push(data.message);
@@ -251,6 +282,16 @@ function createWS() {
                 
             }
             
+        }
+
+        if(data.command === "add_friend_return"){
+            if(data.status === "success"){
+                alert("添加成功");
+                friend.innerHTML = "";
+                getFriendList();
+            }else{
+                alert("添加失败");
+            }
         }
     }
 

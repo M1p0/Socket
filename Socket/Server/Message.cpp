@@ -69,7 +69,7 @@ int PushOfflineMessage(const char* id)
             Mtx_Lock(mtx_Packet);
             Packet_Queue.push(Packet_send);
             Mtx_Unlock(mtx_Packet);
-            SQL = R"(delete from offline_message where message=")" + message + R"(")" + R"( and dst=")" + dst + R"(";)";  //ÑéÖ¤Ê±¼ä
+            SQL = R"(delete from offline_message where message=")" + message + R"(")" + R"( and dst=")" + dst + R"(";)";  //éªŒè¯æ—¶é—´
             Conn.ExecSQL(SQL.c_str(), Result, nRow);
         }
     }
@@ -143,7 +143,7 @@ int Login(const char* JsonData, SOCKET sClient)
 
         vector<vector<string>> Result(1);
         Conn.ExecSQL(SQL.c_str(), Result, nRow);
-        if (nRow == 0)  //ÕËºÅÃÜÂë´íÎó
+        if (nRow == 0)  //è´¦å·å¯†ç é”™è¯¯
         {
             DocSend.AddMember("command", "login_return", DocSend.GetAllocator());
             DocSend.AddMember("status", "fail", DocSend.GetAllocator());
@@ -205,7 +205,7 @@ int Logout(const char* JsonData, SOCKET sClient)
             Sock.Close(sClient);
             return 0;
         }
-        else   //ÀíÂÛÉÏ²»ÓÃ¹Ü
+        else   //ç†è®ºä¸Šä¸ç”¨ç®¡
         {
             return -1;
         }
@@ -236,14 +236,14 @@ int AddFriend(const char* JsonData, SOCKET sClient)
         string status = vstatus.GetString();
         unordered_map<string, SOCKET>::iterator it;
         it = Map_User.find(id);
-        if (it != Map_User.end())  //¼ì²éÊÇ·ñµÇÂ½
+        if (it != Map_User.end())  //æ£€æŸ¥æ˜¯å¦ç™»é™†
         {
             if (it->second == sClient)
             {
                 string SQL = R"(select * from user where id=")" + friend_id + R"(";)";
                 vector<vector<string>> Result(10);
                 Conn.ExecSQL(SQL.c_str(), Result, nRow);
-                if (nRow == 0)//ÎŞ´ËÓÃ»§
+                if (nRow == 0)//æ— æ­¤ç”¨æˆ·
                 {
                     DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
                     DocSend.AddMember("status", "fail", DocSend.GetAllocator());
@@ -253,14 +253,18 @@ int AddFriend(const char* JsonData, SOCKET sClient)
                 {
                     SQL = R"(select * from friendlist where id=")" + id + R"(" and friend_id=")" + friend_id + R"(";)";
                     Conn.ExecSQL(SQL.c_str(), Result, nRow);
-                    if (nRow == 0)  //ºÃÓÑÁĞ±íÖĞÎŞ¸ÃºÃÓÑ
+                    if (nRow == 0)  //å¥½å‹åˆ—è¡¨ä¸­æ— è¯¥å¥½å‹
                     {
+                        Value vusername;
+                        vusername.SetString(Result[0][2].c_str(), Result[0][2].size(), DocSend.GetAllocator());
                         SQL = R"(insert into friendlist values(")" + id + R"(",")" + friend_id + R"(",")" + status + R"(");)";
                         Conn.ExecSQL(SQL.c_str(), Result, nRow);
                         DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
                         DocSend.AddMember("status", "success", DocSend.GetAllocator());
+                        DocSend.AddMember("friend_id", vfriend_id, DocSend.GetAllocator());
+                        DocSend.AddMember("username", vusername, DocSend.GetAllocator());
                     }
-                    else  //ÒÑ¾­ÓĞ¸ÃºÃÓÑ
+                    else  //å·²ç»æœ‰è¯¥å¥½å‹
                     {
                         DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
                         DocSend.AddMember("status", "fail", DocSend.GetAllocator());
@@ -268,21 +272,21 @@ int AddFriend(const char* JsonData, SOCKET sClient)
                     }
                 }
             }
-            else  //ÓÃ»§Óësocket²»Æ¥Åä
+            else  //ç”¨æˆ·ä¸socketä¸åŒ¹é…
             {
                 DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
                 DocSend.AddMember("status", "fail", DocSend.GetAllocator());
                 DocSend.AddMember("datail", "not logged in or using different socket", DocSend.GetAllocator());
             }
         }
-        else  //Î´µÇÂ¼
+        else  //æœªç™»å½•
         {
             DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
             DocSend.AddMember("status", "fail", DocSend.GetAllocator());
             DocSend.AddMember("datail", "not logged in", DocSend.GetAllocator());
         }
     }
-    else //json°ü´íÎó
+    else //jsonåŒ…é”™è¯¯
     {
         DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
         DocSend.AddMember("status", "fail", DocSend.GetAllocator());
@@ -316,14 +320,14 @@ int ListFriend(const char* JsonData, SOCKET sClient)
         string id = vid.GetString();
         unordered_map<string, SOCKET>::iterator it;
         it = Map_User.find(id);
-        if (it != Map_User.end())  //¼ì²éÊÇ·ñµÇÂ½
+        if (it != Map_User.end())  //æ£€æŸ¥æ˜¯å¦ç™»é™†
         {
-            if (it->second == sClient)  //Æ¥Åäsocket
+            if (it->second == sClient)  //åŒ¹é…socket
             {
                 Value vid;
                 vid.SetString(id.c_str(), id.size(), DocSend.GetAllocator());
                 string SQL = R"(select * from friendlist where id=")" + id + R"(";)";
-                vector<vector<string>> Result(1024);  //×î¶à1024
+                vector<vector<string>> Result(1024);  //æœ€å¤š1024
                 Conn.ExecSQL(SQL.c_str(), Result, nRow);
                 if (nRow != 0)
                 {
@@ -339,7 +343,7 @@ int ListFriend(const char* JsonData, SOCKET sClient)
                         Conn.ExecSQL(SQL.c_str(), Result_Username, num);
                         if (num!=0)
                         {
-                            Value Temp(kObjectType);   //ÁÙÊ±µÄobject¶ÔÏó   ´æ´¢friendĞÅÏ¢
+                            Value Temp(kObjectType);   //ä¸´æ—¶çš„objectå¯¹è±¡   å­˜å‚¨friendä¿¡æ¯
                             Value vFriend_id;
                             Value vStatus;
                             Value vUsername;
@@ -351,15 +355,15 @@ int ListFriend(const char* JsonData, SOCKET sClient)
                             Temp.AddMember("status", vStatus, DocSend.GetAllocator());
                             Array_Friends.PushBack(Temp, DocSend.GetAllocator());
                         }
-                        else  //Çå³ı´íÎóÌõÄ¿
+                        else  //æ¸…é™¤é”™è¯¯æ¡ç›®
                         {
                             SQL= R"(delete from friendlist where friend_id=")" + Friend_id + R"(";)";
-                            Conn.ExecSQL(SQL.c_str(), Result_Username, num);  //ÎŞ·µ»Ø¼¯
+                            Conn.ExecSQL(SQL.c_str(), Result_Username, num);  //æ— è¿”å›é›†
                         }
                     }
                     DocSend.AddMember("friends", Array_Friends, DocSend.GetAllocator());
                 }
-                else  //ÎŞ´ËÓÃ»§
+                else  //æ— æ­¤ç”¨æˆ·
                 {
                     DocSend.AddMember("command", "list_friend_return", DocSend.GetAllocator());
                     DocSend.AddMember("status", "fail", DocSend.GetAllocator());
@@ -381,7 +385,7 @@ int ListFriend(const char* JsonData, SOCKET sClient)
             DocSend.AddMember("datail", "not logged in", DocSend.GetAllocator());
         }
     }
-    else   //json°ü´íÎó
+    else   //jsonåŒ…é”™è¯¯
     {
         DocSend.AddMember("command", "list_friend_return", DocSend.GetAllocator());
         DocSend.AddMember("status", "fail", DocSend.GetAllocator());
@@ -420,13 +424,13 @@ int SendMessage(const char* JsonData, SOCKET sClient)
 
         unordered_map<string, SOCKET>::iterator it;
         it = Map_User.find(src);
-        if (it != Map_User.end())  //¼ì²éÊÇ·ñµÇÂ½
+        if (it != Map_User.end())  //æ£€æŸ¥æ˜¯å¦ç™»é™†
         {
             string SQL = R"(select * from friendlist where id=")" + src + R"(")" + R"(and friend_id=")" + dst + R"(";)";
             vector<vector<string>> Result(1);
             Conn.ExecSQL(SQL.c_str(), Result, nRow);
 
-            if (nRow == 0)  //ÎŞ´ËºÃÓÑ¹ØÏµ
+            if (nRow == 0)  //æ— æ­¤å¥½å‹å…³ç³»
             {
                 DocSend.AddMember("command", "send_message_return", DocSend.GetAllocator());
                 DocSend.AddMember("status", "fail", DocSend.GetAllocator());
@@ -445,14 +449,14 @@ int SendMessage(const char* JsonData, SOCKET sClient)
                 Mtx_Unlock(mtx_Packet);
             }
         }
-        else   //socket´íÎó
+        else   //socketé”™è¯¯
         {
             DocSend.AddMember("command", "send_message_return", DocSend.GetAllocator());
             DocSend.AddMember("status", "fail", DocSend.GetAllocator());
             DocSend.AddMember("datail", "not logged in or using different socket", DocSend.GetAllocator());
         }
     }
-    else  //json´íÎó
+    else  //jsoné”™è¯¯
     {
         DocSend.AddMember("command", "send_message_return", DocSend.GetAllocator());
         DocSend.AddMember("status", "fail", DocSend.GetAllocator());

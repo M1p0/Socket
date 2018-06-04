@@ -19,7 +19,7 @@ int Receiver()
     while (true)
     {
         int Length = 0;
-        char Data[BUF_SIZE]; //½ÓÊÕÊı¾İ»º³åÇø 
+        char Data[BUF_SIZE]; //æ¥æ”¶æ•°æ®ç¼“å†²åŒº 
         memset(Data, 0, BUF_SIZE);
         Sock.Recv(sHost, (char*)&Length, 4);
         retVal = Sock.Recv(sHost, Data, Length);
@@ -45,19 +45,19 @@ int main()
     IP = "192.168.1.2";
     Port = 9000;
 
-    if (Sock.Init() != 0)      //³õÊ¼»¯Ì×½á×Ö¶¯Ì¬¿â
+    if (Sock.Init() != 0)      //åˆå§‹åŒ–å¥—ç»“å­—åŠ¨æ€åº“
     {
         cout << "WSAStartup failed!" << endl;
         return -1;
     }
 
-    sHost = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);      //´´½¨Ì×½Ó×Ö
+    sHost = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);      //åˆ›å»ºå¥—æ¥å­—
     if (INVALID_SOCKET == sHost)
     {
         cout << "socket failed!" << endl;
         return  -1;
     }
-    retVal = Sock.Connect(sHost, IP.c_str(), Port);      //Á¬½Ó·şÎñÆ÷
+    retVal = Sock.Connect(sHost, IP.c_str(), Port);      //è¿æ¥æœåŠ¡å™¨
     if (retVal != 0)
     {
         return -1;
@@ -71,7 +71,7 @@ int main()
     {
         Packet Packet_Send;
         memset(&Packet_Send, 0, BUF_SIZE + 4);
-        //Ïò·şÎñÆ÷·¢ËÍÊı¾İ
+        //å‘æœåŠ¡å™¨å‘é€æ•°æ®
         cout << "Send:";
         if (cmd == "logon")
         {
@@ -91,7 +91,7 @@ int main()
         }
         if (cmd == "add")
         {
-            command = R"({"command":"add_friend","id":"10000","friend_id":"10003","status":"0"})";
+            command = R"({"command":"add_friend","id":"10000","friend_id":"1","status":"0"})";
         }
         if (cmd == "list")
         {
@@ -99,7 +99,7 @@ int main()
         }
         if (cmd == "send")
         {
-            command = R"({"command":"send_message","src":"10000","dst":"10003","message":"test!"})";
+            command = R"({"command":"send_message","src":"10000","dst":"1","message":"ä¸­æ–‡"})";
         }
         Packet_Send.Length = command.size();
         memcpy(Packet_Send.Data, command.c_str(), command.size());
@@ -112,8 +112,8 @@ int main()
         cin.clear();
         MSleep(1, "ms");
     }
-    //ÍË³ö
-    Sock.Close(sHost); //¹Ø±ÕÌ×½Ó×Ö
+    //é€€å‡º
+    Sock.Close(sHost); //å…³é—­å¥—æ¥å­—
     return 0;
 }
 

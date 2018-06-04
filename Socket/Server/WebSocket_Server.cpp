@@ -103,7 +103,7 @@ int WS_SendMessage(const char* JsonData, WS_Info Info)
             string SQL = R"(select * from friendlist where id=")" + src + R"(")" + R"(and friend_id=")" + dst + R"(";)";
             vector<vector<string>> Result(1);
             Conn.ExecSQL(SQL.c_str(), Result, nRow);
-            if (nRow == 0)  //ÎŞ´ËºÃÓÑ¹ØÏµ
+            if (nRow == 0)  //æ— æ­¤å¥½å‹å…³ç³»
             {
                 DocSend.AddMember("command", "send_message_return", DocSend.GetAllocator());
                 DocSend.AddMember("status", "fail", DocSend.GetAllocator());
@@ -123,7 +123,7 @@ int WS_SendMessage(const char* JsonData, WS_Info Info)
             }
 
         }
-        else  //Î´µÇÂ¼
+        else  //æœªç™»å½•
         {
             DocSend.AddMember("command", "send_message_return", DocSend.GetAllocator());
             DocSend.AddMember("status", "fail", DocSend.GetAllocator());
@@ -131,7 +131,7 @@ int WS_SendMessage(const char* JsonData, WS_Info Info)
         }
 
     }
-    else  //json´íÎó
+    else  //jsoné”™è¯¯
     {
         DocSend.AddMember("command", "send_message_return", DocSend.GetAllocator());
         DocSend.AddMember("status", "fail", DocSend.GetAllocator());
@@ -149,7 +149,6 @@ int WS_SendMessage(const char* JsonData, WS_Info Info)
 
 void OnOpen(WebsocketServer *server, websocketpp::connection_hdl hdl)
 {
-
     cout << "Web client connected" << endl;
 }
 

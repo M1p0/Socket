@@ -18,11 +18,13 @@
                         <div class="avatar">
                             <img>
                         </div>
-                        <span id="user" class="user text-ellipsis">骑士先生</span>
+                        <span id="user" class="user text-ellipsis">...</span>
                         <span class="shuoshuo text-ellipsis">...</span>
                     </div>
                     <div class="tab-item current">
-                        <header class="tab-header">会话</header>
+                        <header class="tab-header">
+                            会话
+                        </header>
                         <div class="tab-content">
                             <ul id="chart" class="chat-list">
                                 
@@ -30,7 +32,10 @@
                         </div>
                     </div>
                     <div class="tab-item">
-                        <header class="tab-header">联系人</header>
+                        <header class="tab-header">
+                            联系人
+                            <button id="add">+</button>
+                        </header>
                         <div class="tab-content">
                             <ul id="friend" class="friend-list list">
                                 
@@ -53,7 +58,22 @@
                 </footer>
             </div>
         </div>
-        <div id="container"></div>
+        <div id="container">
+                <div class="chat-panel" id="addpanel">
+                    <div class="top">
+                        <div class="head-content">
+                            <header class="chat-header">
+                                <h1>添加好友</h1>
+                                <button id="closeAddPanel" class="closebtn">关闭</button>
+                            </header>
+                            <div class="chat-content">
+                                <input id="friendid" class="_input" type="text" placeholder="请输入对方id">
+                                <button id="addfriend">添加</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        </div>
     </div>
     <script src="js/myim.js"></script>
 </body>

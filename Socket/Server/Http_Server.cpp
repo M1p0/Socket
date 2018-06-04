@@ -17,7 +17,7 @@ extern CFileIO File;
 
 bool startHttpServer(const char *ip, int port, void(*cb)(struct evhttp_request *, void *), void *arg)
 {
-    //´´½¨event_baseºÍevhttp
+    //åˆ›å»ºevent_baseå’Œevhttp
     event_base* base = event_base_new();
     evhttp* http_server = evhttp_new(base);
 
@@ -25,15 +25,15 @@ bool startHttpServer(const char *ip, int port, void(*cb)(struct evhttp_request *
     {
         return false;
     }
-    //°ó¶¨µ½Ö¸¶¨µØÖ·ÉÏ
+    //ç»‘å®šåˆ°æŒ‡å®šåœ°å€ä¸Š
     int ret = evhttp_bind_socket(http_server, ip, port & 0xFFFF);
     if (ret != 0)
     {
         return false;
     }
-    //ÉèÖÃÊÂ¼ş´¦Àíº¯Êı
+    //è®¾ç½®äº‹ä»¶å¤„ç†å‡½æ•°
     evhttp_set_gencb(http_server, cb, arg);
-    //Æô¶¯ÊÂ¼şÑ­»·£¬µ±ÓĞhttpÇëÇóµÄÊ±ºò»áµ÷ÓÃÖ¸¶¨µÄ»Øµ÷
+    //å¯åŠ¨äº‹ä»¶å¾ªç¯ï¼Œå½“æœ‰httpè¯·æ±‚çš„æ—¶å€™ä¼šè°ƒç”¨æŒ‡å®šçš„å›è°ƒ
     cout << "Http Server Running..." << endl;
     event_base_dispatch(base);
     evhttp_free(http_server);
@@ -44,17 +44,17 @@ bool startHttpServer(const char *ip, int port, void(*cb)(struct evhttp_request *
 void MyHttpServerHandler(struct evhttp_request* req, void* arg)
 {
     struct evkeyvalq *Req_Header;
-    Req_Header = evhttp_request_get_input_headers(req);  //requestÍ·
+    Req_Header = evhttp_request_get_input_headers(req);  //requestå¤´
     evbuffer* buf = evbuffer_new();
     char* buffer = new char[BUFFER_SIZE];
     char local[4096];
     memset(buffer, 0, BUFFER_SIZE);
     memset(local, 0, 4096);
     local[0] = '.';
-    const char* uri = (char*)evhttp_request_get_uri(req);   //ÇëÇóµÄuri
+    const char* uri = (char*)evhttp_request_get_uri(req);   //è¯·æ±‚çš„uri
     cout << "uri:" << uri << endl;
 
-    if (_stricmp(uri, "/api") == 0)
+    if (_stricmp(uri, "/api") == 0|| _stricmp(uri, "/api/") == 0)
     {
         int ev_input_data_length = evbuffer_get_length(req->input_buffer);
         unsigned char* ev_input_data = evbuffer_pullup(req->input_buffer, ev_input_data_length);
@@ -83,7 +83,7 @@ void MyHttpServerHandler(struct evhttp_request* req, void* arg)
                 {
                     Value &vcommand = document["command"];
                     string command = vcommand.GetString();
-                    unordered_map<string, int(*)(const char*, char*)>::iterator it;  //µ÷ÓÃÒÑÓĞapi
+                    unordered_map<string, int(*)(const char*, char*)>::iterator it;  //è°ƒç”¨å·²æœ‰api
                     it = Map_Http_API.find(command);
                     if (it != Map_Http_API.end())
                     {
@@ -95,7 +95,7 @@ void MyHttpServerHandler(struct evhttp_request* req, void* arg)
                         char szLength[32];
                         memset(szLength, 0, 32);
                         _i64toa(uLength, szLength, 10);
-                        evbuffer_expand(buf, uLength);   //Ôö´ó»º³åÇø
+                        evbuffer_expand(buf, uLength);   //å¢å¤§ç¼“å†²åŒº
                         evhttp_add_header(req->output_headers, "Content-Length", szLength);
                         evbuffer_add(buf, JsonSend, uLength);
                     }
@@ -131,10 +131,10 @@ void MyHttpServerHandler(struct evhttp_request* req, void* arg)
         }
 
     }
-    else  //ÆäËûÒ³Ãæ
+    else  //å…¶ä»–é¡µé¢
     {
         strcat(local, uri);
-        size_t Pos = 0;//ÕÒ³öµÚÒ»¸ö"?"
+        size_t Pos = 0;//æ‰¾å‡ºç¬¬ä¸€ä¸ª"?"
         FindFirst(uri, "?", Pos);
         if (Pos != 0)
         {
@@ -154,7 +154,7 @@ void MyHttpServerHandler(struct evhttp_request* req, void* arg)
         File.GetSize(local, &uLength);
         char szLength[32];
         _i64toa(uLength, szLength, 10);
-        evbuffer_expand(buf, uLength);   //Ôö´ó»º³åÇø
+        evbuffer_expand(buf, uLength);   //å¢å¤§ç¼“å†²åŒº
 
         string type;
         for (evkeyval* header = Req_Header->tqh_first; header; header = header->next.tqe_next)
@@ -164,9 +164,9 @@ void MyHttpServerHandler(struct evhttp_request* req, void* arg)
                 type = header->value;
             }
         }
-        //»Ø¸´¸ø¿Í»§¶Ë
+        //å›å¤ç»™å®¢æˆ·ç«¯
         evhttp_add_header(req->output_headers, "Content-Length", szLength);
-        //Ìí¼Ócontent-type
+        //æ·»åŠ content-type
         char Temp[128];
         memset(Temp, 0, 128);
         GetExtension(local, Temp);

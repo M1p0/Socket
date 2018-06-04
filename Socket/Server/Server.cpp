@@ -1,6 +1,5 @@
 #undef  WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
-
 #include <iostream>
 #include <unordered_map>
 #include <thread>
@@ -54,23 +53,23 @@ int Forward()
                 unordered_map<string, SOCKET>::iterator it;
                 Mtx_Lock(mtx_Map_User);
                 it = Map_User.find(dst);
-                if (it != Map_User.end())  //androidÔÚÏß
+                if (it != Map_User.end())  //androidåœ¨çº¿
                 {
                     Sock.Send(it->second, (char*)&Packet_Queue.front(), Packet_Queue.front().Length + 4);
                     Packet_Queue.pop();
                     Mtx_Unlock(mtx_Packet);
                 }
-                else  //webÔÚÏß
+                else  //webåœ¨çº¿
                 {
                     unordered_map<string, WS_Info>::iterator it;
                     it = Map_WS_User.find(dst);
                     if (it != Map_WS_User.end())
                     {
-                        it->second.server->send(it->second.hdl, Packet_Queue.front().Data, websocketpp::frame::opcode::text);
+                        it->second.server->send(it->second.hdl, Packet_Queue.front().Data, websocketpp::frame::opcode::TEXT);
                         Packet_Queue.pop();
                         Mtx_Unlock(mtx_Packet);
                     }
-                    else //Ğ´ÈëÊı¾İ¿â
+                    else //å†™å…¥æ•°æ®åº“
                     {
                         vector<vector<string>> Result(1);
                         int nRow = 0;
@@ -82,7 +81,7 @@ int Forward()
                 }
                 Mtx_Unlock(mtx_Map_User);
             }
-            else//json°ü´íÎó ÎŞsrc/dst/message
+            else//jsonåŒ…é”™è¯¯ æ— src/dst/message
             {
                 Packet_Queue.pop();
                 Mtx_Unlock(mtx_Packet);
@@ -107,14 +106,14 @@ int Receiver(SOCKET sClient)
     {
         int retVal = 0;
         int Length = 0;
-        char buf[BUF_SIZE];  //½ÓÊÕ¿Í»§¶ËÊı¾İ 
+        char buf[BUF_SIZE];  //æ¥æ”¶å®¢æˆ·ç«¯æ•°æ® 
         memset(buf, 0, BUF_SIZE);
         retVal = Sock.Recv(sClient, (char*)&Length, 4);
 
         printf("Length:0x%x  ", Length);
 
         retVal = Sock.Recv(sClient, (char*)buf, Length);
-        printf("Data:");
+        printf("Raw_Data:");
         for (int i = 0; i < Length; i++)
         {
             printf("0x%02x ", buf[i]);
@@ -124,7 +123,7 @@ int Receiver(SOCKET sClient)
         if (retVal <= 0)
         {
             cout << "Android client disconnected" << endl;
-            //´ÓmapÖĞÉ¾³ı
+            //ä»mapä¸­åˆ é™¤
             unordered_map<string, SOCKET>::iterator it;
             for (it = Map_User.begin(); it != Map_User.end(); )
             {
@@ -147,7 +146,7 @@ int Receiver(SOCKET sClient)
         PRecv.Length = Length;
         memcpy(PRecv.Data, buf, BUF_SIZE);
 
-        //»ñÈ¡Ö¸Áî
+        //è·å–æŒ‡ä»¤
         Document document;
         document.Parse(buf);
         if (document.IsObject())
@@ -162,7 +161,7 @@ int Receiver(SOCKET sClient)
                 {
                     it->second(buf, sClient);
                 }
-                else    //´íÎóµÄjson°ü command²»ÕıÈ·
+                else    //é”™è¯¯çš„jsonåŒ… commandä¸æ­£ç¡®
                 {
                     cout << "command not found" << endl;
                 }
