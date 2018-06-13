@@ -17,5 +17,6 @@ struct WS_Info
 void WS_Run();
 int WS_Login(const char* JsonData, WS_Info Info);
 int WS_SendMessage(const char* JsonData, WS_Info Info);
-
+int WS_AddFriend(const char* JsonData, WS_Info Info);
+int WS_AddFriendConfirm(const char* JsonData, WS_Info Info);
 

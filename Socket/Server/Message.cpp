@@ -3,6 +3,7 @@
 #include "MJson.h"
 #include <MDatabase.h>
 #include <unordered_map>
+#include <unordered_set>
 #include <MyEvent.h>
 #include <string.h>
 #include <iostream>
@@ -23,6 +24,234 @@ extern MSocket Sock;
 extern MDatabase Conn;
 extern unordered_map<string, SOCKET> Map_User;
 
+unordered_map<string, unordered_set<string>> Map_AddFriend;
+mutex mtx_Map_AddFriend;
+
+int AddFriendConfirm(const char* JsonData, SOCKET sClient)  //此函数中dst为登陆用户 src为好友
+{
+    Document DocReceive;
+    Document DocSend;
+    DocSend.SetObject();
+    int nRow;
+    DocReceive.Parse(JsonData);
+    if (DocReceive.HasMember("src") && DocReceive.HasMember("dst") && DocReceive.HasMember("status"))
+    {
+        Value &vsrc = DocReceive["src"];
+        Value &vdst = DocReceive["dst"];
+        Value &vstatus = DocReceive["status"];
+        Value &vmessage = DocReceive["message"];
+        string src = vsrc.GetString();
+        string dst = vdst.GetString();
+        string status = vstatus.GetString();
+        string message = vmessage.GetString();
+        unordered_map<string, SOCKET>::iterator it;
+        it = Map_User.find(dst);  //此时的dst才是登陆的用户  
+        if (it != Map_User.end())  //检查是否登陆
+        {
+            if (it->second == sClient)
+            {
+                string SQL = R"(select * from user where id=")" + src + R"(";)";
+                vector<vector<string>> Result(10);
+                Conn.ExecSQL(SQL.c_str(), Result, nRow);
+                if (nRow == 0)//无此用户
+                {
+                    DocSend.AddMember("command", "add_friend_confirm_return", DocSend.GetAllocator());
+                    DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+                    DocSend.AddMember("datail", "wrong src", DocSend.GetAllocator());
+                }
+                else
+                {
+                    if (message=="confirm_two_way")
+                    {
+                        SQL = R"(select * from friendlist where id=")" + dst + R"(" and friend_id=")" + src + R"(";)";
+                        Conn.ExecSQL(SQL.c_str(), Result, nRow);
+                        if (nRow == 0)  //好友列表中无该好友    添加好友
+                        {
+                            unordered_map<string, unordered_set<string>>::iterator it_map;
+                            Mtx_Lock(mtx_Map_AddFriend);
+                            it_map = Map_AddFriend.find(src);
+                            if (it_map != Map_AddFriend.end())
+                            {
+                                unordered_set<string>::iterator it_set;
+                                it_set = it_map->second.find(dst);
+                                if (it_set != it_map->second.end())
+                                {
+                                    string SQL = R"(insert into friendlist values(")" + src + R"(",")" + dst + R"(",")" + status + R"(");)";
+                                    Conn.ExecSQL(SQL.c_str(), Result, nRow);
+                                    SQL = R"(insert into friendlist values(")" + dst + R"(",")" + src + R"(",")" + status + R"(");)";
+                                    Conn.ExecSQL(SQL.c_str(), Result, nRow);
+                                    DocSend.AddMember("command", "add_friend_confirm_return", DocSend.GetAllocator());
+                                    DocSend.AddMember("status", "success", DocSend.GetAllocator());
+                                }
+                                else//伪造的confirm包
+                                {
+
+                                }
+
+                            }
+                            else  //伪造的confirm包
+                            {
+
+                            }
+                            Mtx_Unlock(mtx_Map_AddFriend);
+                        }
+                        else  //已经有该好友
+                        {
+                            DocSend.AddMember("command", "add_friend_confirm_return", DocSend.GetAllocator());
+                            DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+                            DocSend.AddMember("datail", "already have this friend", DocSend.GetAllocator());
+                        }
+                    }
+                    else  //不添加好友
+                    {
+
+                    }
+                    
+                }
+            }
+            else  //用户与socket不匹配
+            {
+                DocSend.AddMember("command", "add_friend_confirm_return", DocSend.GetAllocator());
+                DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+                DocSend.AddMember("datail", "not logged in or using different socket", DocSend.GetAllocator());
+            }
+        }
+        else  //未登录
+        {
+            DocSend.AddMember("command", "add_friend_confirm_return", DocSend.GetAllocator());
+            DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+            DocSend.AddMember("datail", "not logged in", DocSend.GetAllocator());
+        }
+    }
+    else //json包错误
+    {
+        DocSend.AddMember("command", "add_friend_confirm_return", DocSend.GetAllocator());
+        DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+        DocSend.AddMember("datail", "wrong Json", DocSend.GetAllocator());
+    }
+    StringBuffer buffer;
+    PrettyWriter<StringBuffer> writer(buffer);
+    DocSend.Accept(writer);
+    string JsonSend = buffer.GetString();
+    Packet Packet_Send;
+    memset(Packet_Send.Data, 0, BUF_SIZE);
+    Packet_Send.Length = JsonSend.size();
+    memcpy(Packet_Send.Data, JsonSend.c_str(), JsonSend.size());
+    Sock.Send(sClient, (char*)&Packet_Send, JsonSend.size() + 4);
+    return 0;
+
+}
+
+
+int AddFriend(const char* JsonData, SOCKET sClient)
+{
+    Document DocReceive;
+    Document DocSend;
+    DocSend.SetObject();
+    int nRow;
+    DocReceive.Parse(JsonData);
+    if (DocReceive.HasMember("src") && DocReceive.HasMember("dst") && DocReceive.HasMember("status"))
+    {
+        Value &vsrc = DocReceive["src"];
+        Value &vdst = DocReceive["dst"];
+        Value &vstatus = DocReceive["status"];
+        string src = vsrc.GetString();
+        string dst = vdst.GetString();
+        string status = vstatus.GetString();
+        unordered_map<string, SOCKET>::iterator it;
+        it = Map_User.find(src);
+        if (it != Map_User.end())  //检查是否登陆
+        {
+            if (it->second == sClient)
+            {
+                string SQL = R"(select * from user where id=")" + dst + R"(";)";
+                vector<vector<string>> Result(10);
+                Conn.ExecSQL(SQL.c_str(), Result, nRow);
+                if (nRow == 0)//无此用户
+                {
+                    DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
+                    DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+                    DocSend.AddMember("datail", "wrong friend_id", DocSend.GetAllocator());
+                }
+                else
+                {
+                    SQL = R"(select * from friendlist where id=")" + src + R"(" and friend_id=")" + dst + R"(";)";
+                    Conn.ExecSQL(SQL.c_str(), Result, nRow);
+                    if (nRow == 0)  //好友列表中无该好友   应把消息转发到dst处
+                    {
+                        Document DocFwd;
+                        DocFwd.SetObject();
+                        DocFwd.Parse(JsonData);
+                        DocFwd.AddMember("message", "confirm_one_way", DocFwd.GetAllocator());
+                        StringBuffer buffer;
+                        PrettyWriter<StringBuffer> writer(buffer);
+                        DocFwd.Accept(writer);
+                        string Confirm = buffer.GetString();
+                        Packet Packet_send;
+                        memset(&Packet_send, 0, BUF_SIZE + 4);
+                        Packet_send.Length = Confirm.size();
+                        memcpy(Packet_send.Data, Confirm.c_str(), Confirm.size());
+                        Mtx_Lock(mtx_Packet);
+                        Packet_Queue.push(Packet_send);
+                        Mtx_Unlock(mtx_Packet);
+                        
+                        unordered_map<string, unordered_set<string>>::iterator it;
+                        Mtx_Lock(mtx_Map_AddFriend);
+                        it = Map_AddFriend.find(src);
+                        if (it==Map_AddFriend.end())
+                        {
+                            unordered_set<string> Set_dst;
+                            Set_dst.insert(dst);
+                            Map_AddFriend.insert(pair<string, unordered_set<string>>(src,Set_dst));
+                        }
+                        else
+                        {
+                            it->second.insert(dst);
+                        }
+                        Mtx_Unlock(mtx_Map_AddFriend);
+                        DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
+                        DocSend.AddMember("status", "success", DocSend.GetAllocator());
+                    }
+                    else  //已经有该好友
+                    {
+                        DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
+                        DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+                        DocSend.AddMember("datail", "already have this friend", DocSend.GetAllocator());
+                    }
+                }
+            }
+            else  //用户与socket不匹配
+            {
+                DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
+                DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+                DocSend.AddMember("datail", "not logged in or using different socket", DocSend.GetAllocator());
+            }
+        }
+        else  //未登录
+        {
+            DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
+            DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+            DocSend.AddMember("datail", "not logged in", DocSend.GetAllocator());
+        }
+    }
+    else //json包错误
+    {
+        DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
+        DocSend.AddMember("status", "fail", DocSend.GetAllocator());
+        DocSend.AddMember("datail", "wrong Json", DocSend.GetAllocator());
+    }
+    StringBuffer buffer;
+    PrettyWriter<StringBuffer> writer(buffer);
+    DocSend.Accept(writer);
+    string JsonSend = buffer.GetString();
+    Packet Packet_Send;
+    memset(Packet_Send.Data, 0, BUF_SIZE);
+    Packet_Send.Length = JsonSend.size();
+    memcpy(Packet_Send.Data, JsonSend.c_str(), JsonSend.size());
+    Sock.Send(sClient, (char*)&Packet_Send, JsonSend.size() + 4);
+    return 0;
+
+}
 
 
 int PushOfflineMessage(const char* id)
@@ -217,93 +446,6 @@ int Logout(const char* JsonData, SOCKET sClient)
 
 }
 
-
-
-int AddFriend(const char* JsonData, SOCKET sClient)
-{
-    Document DocReceive;
-    Document DocSend;
-    DocSend.SetObject();
-    int nRow;
-    DocReceive.Parse(JsonData);
-    if (DocReceive.HasMember("id") && DocReceive.HasMember("friend_id") && DocReceive.HasMember("status"))
-    {
-        Value &vid = DocReceive["id"];
-        Value &vfriend_id = DocReceive["friend_id"];
-        Value &vstatus = DocReceive["status"];
-        string id = vid.GetString();
-        string friend_id = vfriend_id.GetString();
-        string status = vstatus.GetString();
-        unordered_map<string, SOCKET>::iterator it;
-        it = Map_User.find(id);
-        if (it != Map_User.end())  //检查是否登陆
-        {
-            if (it->second == sClient)
-            {
-                string SQL = R"(select * from user where id=")" + friend_id + R"(";)";
-                vector<vector<string>> Result(10);
-                Conn.ExecSQL(SQL.c_str(), Result, nRow);
-                if (nRow == 0)//无此用户
-                {
-                    DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
-                    DocSend.AddMember("status", "fail", DocSend.GetAllocator());
-                    DocSend.AddMember("datail", "wrong friend_id", DocSend.GetAllocator());
-                }
-                else
-                {
-                    SQL = R"(select * from friendlist where id=")" + id + R"(" and friend_id=")" + friend_id + R"(";)";
-                    Conn.ExecSQL(SQL.c_str(), Result, nRow);
-                    if (nRow == 0)  //好友列表中无该好友
-                    {
-                        Value vusername;
-                        vusername.SetString(Result[0][2].c_str(), Result[0][2].size(), DocSend.GetAllocator());
-                        SQL = R"(insert into friendlist values(")" + id + R"(",")" + friend_id + R"(",")" + status + R"(");)";
-                        Conn.ExecSQL(SQL.c_str(), Result, nRow);
-                        DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
-                        DocSend.AddMember("status", "success", DocSend.GetAllocator());
-                        DocSend.AddMember("friend_id", vfriend_id, DocSend.GetAllocator());
-                        DocSend.AddMember("username", vusername, DocSend.GetAllocator());
-                    }
-                    else  //已经有该好友
-                    {
-                        DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
-                        DocSend.AddMember("status", "fail", DocSend.GetAllocator());
-                        DocSend.AddMember("datail", "already have this friend", DocSend.GetAllocator());
-                    }
-                }
-            }
-            else  //用户与socket不匹配
-            {
-                DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
-                DocSend.AddMember("status", "fail", DocSend.GetAllocator());
-                DocSend.AddMember("datail", "not logged in or using different socket", DocSend.GetAllocator());
-            }
-        }
-        else  //未登录
-        {
-            DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
-            DocSend.AddMember("status", "fail", DocSend.GetAllocator());
-            DocSend.AddMember("datail", "not logged in", DocSend.GetAllocator());
-        }
-    }
-    else //json包错误
-    {
-        DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
-        DocSend.AddMember("status", "fail", DocSend.GetAllocator());
-        DocSend.AddMember("datail", "wrong Json", DocSend.GetAllocator());
-    }
-    StringBuffer buffer;
-    PrettyWriter<StringBuffer> writer(buffer);
-    DocSend.Accept(writer);
-    string JsonSend = buffer.GetString();
-    Packet Packet_Send;
-    memset(Packet_Send.Data, 0, BUF_SIZE);
-    Packet_Send.Length = JsonSend.size();
-    memcpy(Packet_Send.Data, JsonSend.c_str(), JsonSend.size());
-    Sock.Send(sClient, (char*)&Packet_Send, JsonSend.size() + 4);
-    return 0;
-
-}
 
 
 

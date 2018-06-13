@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="头文件\MyLib">
+      <UniqueIdentifier>{1534b305-a52a-47c9-aa30-15a19282f34f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Server.cpp">
@@ -52,6 +55,36 @@
     </ClInclude>
     <ClInclude Include="Http_API.h">
       <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Lib\MyLib\include\CFileIO.h">
+      <Filter>头文件\MyLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Lib\MyLib\include\FileIO.h">
+      <Filter>头文件\MyLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Lib\MyLib\include\FileIO_DLL.h">
+      <Filter>头文件\MyLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Lib\MyLib\include\Hw_event.h">
+      <Filter>头文件\MyLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Lib\MyLib\include\LinkList.h">
+      <Filter>头文件\MyLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Lib\MyLib\include\MDatabase.h">
+      <Filter>头文件\MyLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Lib\MyLib\include\MSocket.h">
+      <Filter>头文件\MyLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Lib\MyLib\include\MString.h">
+      <Filter>头文件\MyLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Lib\MyLib\include\MyEvent.h">
+      <Filter>头文件\MyLib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Lib\MyLib\include\Public.h">
+      <Filter>头文件\MyLib</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

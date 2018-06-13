@@ -102,68 +102,6 @@ int Login_API(const char* JsonData, char* JsonSend)
 
 }
 
-int AddFriend_API(const char* JsonData, char* JsonSend)
-{
-    Document DocReceive;
-    Document DocSend;
-    DocSend.SetObject();
-    int nRow;
-    DocReceive.Parse(JsonData);
-    if (DocReceive.HasMember("id") && DocReceive.HasMember("friend_id") && DocReceive.HasMember("status"))
-    {
-        Value &vid = DocReceive["id"];
-        Value &vfriend_id = DocReceive["friend_id"];
-        Value &vstatus = DocReceive["status"];
-        string id = vid.GetString();
-        string friend_id = vfriend_id.GetString();
-        string status = vstatus.GetString();
-
-        string SQL = R"(select * from user where id=")" + friend_id + R"(";)";
-        vector<vector<string>> Result(10);
-        Conn.ExecSQL(SQL.c_str(), Result, nRow);
-        if (nRow == 0)//无此用户
-        {
-            DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
-            DocSend.AddMember("status", "fail", DocSend.GetAllocator());
-            DocSend.AddMember("datail", "wrong friend_id", DocSend.GetAllocator());
-        }
-        else
-        {
-            SQL = R"(select * from friendlist where id=")" + id + R"(" and friend_id=")" + friend_id + R"(";)";
-            Conn.ExecSQL(SQL.c_str(), Result, nRow);
-            if (nRow == 0)  //好友列表中无该好友
-            {
-                Value vusername;
-                vusername.SetString(Result[0][2].c_str(), Result[0][2].size(),DocSend.GetAllocator());
-                SQL = R"(insert into friendlist values(")" + id + R"(",")" + friend_id + R"(",")" + status + R"(");)";
-                Conn.ExecSQL(SQL.c_str(), Result, nRow);
-                DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
-                DocSend.AddMember("status", "success", DocSend.GetAllocator());
-                DocSend.AddMember("friend_id", vfriend_id, DocSend.GetAllocator());
-                DocSend.AddMember("username", vusername, DocSend.GetAllocator());
-                
-            }
-            else  //已经有该好友
-            {
-                DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
-                DocSend.AddMember("status", "fail", DocSend.GetAllocator());
-                DocSend.AddMember("datail", "already have this friend", DocSend.GetAllocator());
-            }
-        }
-    }
-    else //json包错误
-    {
-        DocSend.AddMember("command", "add_friend_return", DocSend.GetAllocator());
-        DocSend.AddMember("status", "fail", DocSend.GetAllocator());
-    }
-
-    StringBuffer buffer;
-    PrettyWriter<StringBuffer> writer(buffer);
-    DocSend.Accept(writer);
-    memcpy(JsonSend, buffer.GetString(), buffer.GetSize());
-    return -1;
-
-}
 
 
 int ListFriend_API(const char* JsonData, char* JsonSend)

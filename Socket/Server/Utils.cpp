@@ -22,28 +22,32 @@ int InitMap()
     int(*pAddFriend)(const char*, SOCKET) = &AddFriend;
     int(*pListFriend)(const char*, SOCKET) = &ListFriend;
     int(*pSendMessage)(const char*, SOCKET) = &SendMessage;
+    int(*pAddFriendConfirm)(const char*, SOCKET) = &AddFriendConfirm;
     Map_Func.insert(pair<string, int(*)(const char*, SOCKET)>("logon", pLogon));
     Map_Func.insert(pair<string, int(*)(const char*, SOCKET)>("login", pLogin));
     Map_Func.insert(pair<string, int(*)(const char*, SOCKET)>("logout", pLogout));
     Map_Func.insert(pair<string, int(*)(const char*, SOCKET)>("add_friend", pAddFriend));
     Map_Func.insert(pair<string, int(*)(const char*, SOCKET)>("list_friend", pListFriend));
     Map_Func.insert(pair<string, int(*)(const char*, SOCKET)>("send_message", pSendMessage));
+    Map_Func.insert(pair<string, int(*)(const char*, SOCKET)>("add_friend_confirm", pAddFriendConfirm));
 
 
     int(*pLogon_API)(const char*, char*) = &Logon_API;
     int(*pLogin_API)(const char*, char*) = &Login_API;
-    int(*pAddFriend_API)(const char*, char*) = &AddFriend_API;
     int(*pListFriend_API)(const char*, char*) = &ListFriend_API;
     Map_Http_API.insert(pair<string, int(*)(const char*, char*)>("logon", pLogon_API));
     Map_Http_API.insert(pair<string, int(*)(const char*, char*)>("login", pLogin_API));
-    Map_Http_API.insert(pair<string, int(*)(const char*, char*)>("add_friend", pAddFriend_API));
     Map_Http_API.insert(pair<string, int(*)(const char*, char*)>("list_friend", pListFriend_API));
 
 
     int(*pWS_Login)(const char*, WS_Info) = &WS_Login;
     int(*pWS_SendMessage)(const char*, WS_Info) = &WS_SendMessage;
+    int(*pWS_AddFriend)(const char*, WS_Info) = &WS_AddFriend;
+    int(*pWS_AddFriendConfirm)(const char*, WS_Info) = &WS_AddFriendConfirm;
     Map_WS_API.insert(pair<string, int(*)(const char*, WS_Info)>("login", pWS_Login));
     Map_WS_API.insert(pair<string, int(*)(const char*, WS_Info)>("send_message", pWS_SendMessage));
+    Map_WS_API.insert(pair<string, int(*)(const char*, WS_Info)>("add_friend", pWS_AddFriend));
+    Map_WS_API.insert(pair<string, int(*)(const char*, WS_Info)>("add_friend_confirm", pWS_AddFriendConfirm));
 
     return 0;
 }

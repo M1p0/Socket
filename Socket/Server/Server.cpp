@@ -15,7 +15,7 @@
 #include "Message.h"
 #include "MJson.h"
 #include "Utils.h"
-#include "CFileIO.h"
+#include <CFileIO.h>
 #include "Http_Server.h"
 using namespace std;
 
@@ -57,7 +57,6 @@ int Forward()
                 {
                     Sock.Send(it->second, (char*)&Packet_Queue.front(), Packet_Queue.front().Length + 4);
                     Packet_Queue.pop();
-                    Mtx_Unlock(mtx_Packet);
                 }
                 else  //web在线
                 {
@@ -67,16 +66,21 @@ int Forward()
                     {
                         it->second.server->send(it->second.hdl, Packet_Queue.front().Data, websocketpp::frame::opcode::TEXT);
                         Packet_Queue.pop();
-                        Mtx_Unlock(mtx_Packet);
                     }
                     else //写入数据库
                     {
-                        vector<vector<string>> Result(1);
-                        int nRow = 0;
-                        string SQL = R"(insert into offline_message values(")" + src + R"(",")" + dst + R"(",")" + message + R"(");)";
-                        Conn.ExecSQL(SQL.c_str(), Result, nRow);
-                        Packet_Queue.pop();
-                        Mtx_Unlock(mtx_Packet);
+                        if (message == "confirm_one_way")  //add_friend_confirm
+                        {
+                            Packet_Queue.pop();
+                        }
+                        else
+                        {
+                            vector<vector<string>> Result(1);
+                            int nRow = 0;
+                            string SQL = R"(insert into offline_message values(")" + src + R"(",")" + dst + R"(",")" + message + R"(");)";
+                            Conn.ExecSQL(SQL.c_str(), Result, nRow);
+                            Packet_Queue.pop();
+                        }
                     }
                 }
                 Mtx_Unlock(mtx_Map_User);
@@ -84,13 +88,13 @@ int Forward()
             else//json包错误 无src/dst/message
             {
                 Packet_Queue.pop();
-                Mtx_Unlock(mtx_Packet);
             }
         }
         else   //not json
         {
-            Mtx_Unlock(mtx_Packet);
+            
         }
+        Mtx_Unlock(mtx_Packet);
         MSleep(1, "ms");
     }
     return 0;

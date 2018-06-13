@@ -165,6 +165,16 @@
     <ClCompile Include="WebSocket_Server.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\Lib\MyLib\include\CFileIO.h" />
+    <ClInclude Include="..\Lib\MyLib\include\FileIO.h" />
+    <ClInclude Include="..\Lib\MyLib\include\FileIO_DLL.h" />
+    <ClInclude Include="..\Lib\MyLib\include\Hw_event.h" />
+    <ClInclude Include="..\Lib\MyLib\include\LinkList.h" />
+    <ClInclude Include="..\Lib\MyLib\include\MDatabase.h" />
+    <ClInclude Include="..\Lib\MyLib\include\MSocket.h" />
+    <ClInclude Include="..\Lib\MyLib\include\MString.h" />
+    <ClInclude Include="..\Lib\MyLib\include\MyEvent.h" />
+    <ClInclude Include="..\Lib\MyLib\include\Public.h" />
     <ClInclude Include="Http_Server.h" />
     <ClInclude Include="Http_API.h" />
     <ClInclude Include="Message.h" />

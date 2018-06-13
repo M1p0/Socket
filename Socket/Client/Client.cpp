@@ -79,11 +79,11 @@ int main()
         }
         if (cmd=="login1")
         {
-            command = R"({"command":"login","id":"10000","password":"password"})";
+            command = R"({"command":"login","id":"1","password":"1"})";
         }
-        if (cmd == "login2")
+        if (cmd == "login10000")
         {
-            command = R"({"command":"login","id":"10003","password":"passwd"})";
+            command = R"({"command":"login","id":"10000","password":"10000"})";
         }
         if (cmd=="logout")
         {
@@ -91,7 +91,7 @@ int main()
         }
         if (cmd == "add")
         {
-            command = R"({"command":"add_friend","id":"10000","friend_id":"1","status":"0"})";
+            command = R"({"command":"add_friend","src":"10000","dst":"1","status":"0"})";
         }
         if (cmd == "list")
         {
@@ -99,8 +99,13 @@ int main()
         }
         if (cmd == "send")
         {
-            command = R"({"command":"send_message","src":"10000","dst":"1","message":"中文"})";
+            command = R"({"command":"send_message","src":"1","dst":"10000","message":"中文"})";
         }
+        if (cmd == "confirm")
+        {
+            command = R"({"command":"add_friend_confirm","src":"10000","dst":"1","status":"0","message":"confirm_two_way"})";
+        }
+
         Packet_Send.Length = command.size();
         memcpy(Packet_Send.Data, command.c_str(), command.size());
         retVal = Sock.Send(sHost, (char*)&Packet_Send, command.size() + 4);
