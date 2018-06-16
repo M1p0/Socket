@@ -29,6 +29,8 @@ mutex mtx_Map_AddFriend;
 
 int AddFriendConfirm(const char* JsonData, SOCKET sClient)  //此函数中dst为登陆用户 src为好友
 {
+    bool confirmed = false;
+    string temp_src = "0";
     Document DocReceive;
     Document DocSend;
     DocSend.SetObject();
@@ -41,10 +43,12 @@ int AddFriendConfirm(const char* JsonData, SOCKET sClient)  //此函数中dst为
         Value &vstatus = DocReceive["status"];
         Value &vmessage = DocReceive["message"];
         string src = vsrc.GetString();
+        temp_src = src;
         string dst = vdst.GetString();
         string status = vstatus.GetString();
         string message = vmessage.GetString();
         unordered_map<string, SOCKET>::iterator it;
+        Mtx_Lock(mtx_Map_User);
         it = Map_User.find(dst);  //此时的dst才是登陆的用户  
         if (it != Map_User.end())  //检查是否登陆
         {
@@ -82,6 +86,7 @@ int AddFriendConfirm(const char* JsonData, SOCKET sClient)  //此函数中dst为
                                     Conn.ExecSQL(SQL.c_str(), Result, nRow);
                                     DocSend.AddMember("command", "add_friend_confirm_return", DocSend.GetAllocator());
                                     DocSend.AddMember("status", "success", DocSend.GetAllocator());
+                                    confirmed = true;
                                 }
                                 else//伪造的confirm包
                                 {
@@ -108,6 +113,7 @@ int AddFriendConfirm(const char* JsonData, SOCKET sClient)  //此函数中dst为
                     }
                     
                 }
+                Mtx_Unlock(mtx_Map_User);
             }
             else  //用户与socket不匹配
             {
@@ -138,6 +144,18 @@ int AddFriendConfirm(const char* JsonData, SOCKET sClient)  //此函数中dst为
     Packet_Send.Length = JsonSend.size();
     memcpy(Packet_Send.Data, JsonSend.c_str(), JsonSend.size());
     Sock.Send(sClient, (char*)&Packet_Send, JsonSend.size() + 4);
+
+    if (confirmed)
+    {
+        unordered_map<string, SOCKET>::iterator it;
+        Mtx_Lock(mtx_Map_User);
+        it = Map_User.find(temp_src);
+        if (it!=Map_User.end())
+        {
+            Sock.Send(it->second, (char*)&Packet_Send, JsonSend.size() + 4);
+        }
+        Mtx_Unlock(mtx_Map_User);
+    }
     return 0;
 
 }
@@ -159,6 +177,7 @@ int AddFriend(const char* JsonData, SOCKET sClient)
         string dst = vdst.GetString();
         string status = vstatus.GetString();
         unordered_map<string, SOCKET>::iterator it;
+        Mtx_Lock(mtx_Map_User);
         it = Map_User.find(src);
         if (it != Map_User.end())  //检查是否登陆
         {
@@ -226,6 +245,7 @@ int AddFriend(const char* JsonData, SOCKET sClient)
                 DocSend.AddMember("status", "fail", DocSend.GetAllocator());
                 DocSend.AddMember("datail", "not logged in or using different socket", DocSend.GetAllocator());
             }
+            Mtx_Unlock(mtx_Map_User);
         }
         else  //未登录
         {

@@ -17,6 +17,7 @@ extern mutex mtx_Map_AddFriend;
 extern MDatabase Conn;
 extern queue <Packet> Packet_Queue;
 unordered_map<string, WS_Info> Map_WS_User;
+mutex mtx_Map_WS_User;
 unordered_map<string, int(*)(const char*, WS_Info)> Map_WS_API;
 extern unordered_map<string, unordered_set<string>> Map_AddFriend;
 
@@ -52,7 +53,9 @@ int WS_Login(const char* JsonData, WS_Info Info)
         }
         else
         {
+            Mtx_Lock(mtx_Map_WS_User);
             Map_WS_User.insert(pair<string, WS_Info>(id, Info));
+            Mtx_Unlock(mtx_Map_WS_User);
             Value vUsername(Result[0][0].c_str(), DocSend.GetAllocator());
             DocSend.SetObject();
             DocSend.AddMember("command", "login_return", DocSend.GetAllocator());
@@ -98,6 +101,7 @@ int WS_SendMessage(const char* JsonData, WS_Info Info)
 
 
         unordered_map<string, WS_Info>::iterator it;
+        Mtx_Lock(mtx_Map_WS_User);
         it = Map_WS_User.find(src);
         if (it != Map_WS_User.end())
         {
@@ -123,7 +127,7 @@ int WS_SendMessage(const char* JsonData, WS_Info Info)
                 DocSend.AddMember("command", "send_message_return", DocSend.GetAllocator());
                 DocSend.AddMember("status", "success", DocSend.GetAllocator());
             }
-
+            Mtx_Unlock(mtx_Map_WS_User);
         }
         else  //未登录
         {
@@ -157,6 +161,7 @@ void OnOpen(WebsocketServer *server, websocketpp::connection_hdl hdl)
 void OnClose(WebsocketServer *server, websocketpp::connection_hdl hdl)
 {
     unordered_map<string, WS_Info>::iterator it;
+    Mtx_Lock(mtx_Map_WS_User);
     for (it = Map_WS_User.begin(); it != Map_WS_User.end();)
     {
 
@@ -169,6 +174,7 @@ void OnClose(WebsocketServer *server, websocketpp::connection_hdl hdl)
             it++;
         }
     }
+    Mtx_Unlock(mtx_Map_WS_User);
     cout << "Web client disconnected" << endl;
 }
 
@@ -276,6 +282,7 @@ int WS_AddFriend(const char* JsonData, WS_Info Info)
         string dst = vdst.GetString();
         string status = vstatus.GetString();
         unordered_map<string, WS_Info>::iterator it;
+        Mtx_Lock(mtx_Map_WS_User);
         it = Map_WS_User.find(src);
         if (it != Map_WS_User.end())  //检查是否登陆
         {
@@ -343,6 +350,7 @@ int WS_AddFriend(const char* JsonData, WS_Info Info)
                 DocSend.AddMember("status", "fail", DocSend.GetAllocator());
                 DocSend.AddMember("datail", "not logged in or using different socket", DocSend.GetAllocator());
             }
+            Mtx_Unlock(mtx_Map_WS_User);
         }
         else  //未登录
         {
@@ -369,6 +377,8 @@ int WS_AddFriend(const char* JsonData, WS_Info Info)
 
 int WS_AddFriendConfirm(const char* JsonData, WS_Info Info)  //此函数中dst为登陆用户 src为好友
 {
+    bool confirmed = false;
+    string temp_src = "0";
     Document DocReceive;
     Document DocSend;
     DocSend.SetObject();
@@ -381,10 +391,12 @@ int WS_AddFriendConfirm(const char* JsonData, WS_Info Info)  //此函数中dst�
         Value &vstatus = DocReceive["status"];
         Value &vmessage = DocReceive["message"];
         string src = vsrc.GetString();
+        temp_src = src;
         string dst = vdst.GetString();
         string status = vstatus.GetString();
         string message = vmessage.GetString();
         unordered_map<string, WS_Info>::iterator it;
+        Mtx_Lock(mtx_Map_WS_User);
         it = Map_WS_User.find(dst);  //此时的dst才是登陆的用户  
         if (it != Map_WS_User.end())  //检查是否登陆
         {
@@ -422,6 +434,7 @@ int WS_AddFriendConfirm(const char* JsonData, WS_Info Info)  //此函数中dst�
                                     Conn.ExecSQL(SQL.c_str(), Result, nRow);
                                     DocSend.AddMember("command", "add_friend_confirm_return", DocSend.GetAllocator());
                                     DocSend.AddMember("status", "success", DocSend.GetAllocator());
+                                    confirmed = true;
                                 }
                                 else//伪造的confirm包
                                 {
@@ -455,6 +468,7 @@ int WS_AddFriendConfirm(const char* JsonData, WS_Info Info)  //此函数中dst�
                 DocSend.AddMember("status", "fail", DocSend.GetAllocator());
                 DocSend.AddMember("datail", "not logged in or using different socket", DocSend.GetAllocator());
             }
+            Mtx_Unlock(mtx_Map_WS_User);
         }
         else  //未登录
         {
@@ -474,6 +488,19 @@ int WS_AddFriendConfirm(const char* JsonData, WS_Info Info)  //此函数中dst�
     DocSend.Accept(writer);
     string JsonSend = buffer.GetString();
     Info.server->send(Info.hdl, JsonSend.c_str(), websocketpp::frame::opcode::text);
+
+    if (confirmed)
+    {
+        unordered_map<string, WS_Info>::iterator it;
+        Mtx_Lock(mtx_Map_WS_User);
+        it = Map_WS_User.find(temp_src);
+        if (it != Map_WS_User.end())
+        {
+            it->second.server->send(it->second.hdl, JsonSend.c_str(), websocketpp::frame::opcode::text);
+        }
+        Mtx_Unlock(mtx_Map_WS_User);
+    }
+
     return 0;
 
 }
