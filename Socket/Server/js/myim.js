@@ -1,5 +1,5 @@
-var httpUrl = "http://192.168.1.2:9001/api";
-var webSocketUrl = "ws://192.168.1.2:9002";
+var httpUrl = "http://127.0.0.1:9001/api";
+var webSocketUrl = "ws://127.0.0.1:9002";
 var id = getQueryStringByName("user");
 var username = getQueryStringByName("username");
 var pw = getQueryStringByName("pw");
@@ -11,7 +11,7 @@ var oContainer = document.getElementById("container");
 var chatUL = document.getElementById("chart");
 var websocket = new WebSocket(webSocketUrl);
 var add = document.getElementById("add");
-var addPanel = document.getElementById("addpanel");
+
 var msg = {};
 var friendUserName = {}
 
@@ -43,24 +43,28 @@ function init() {
 })();
 
 function addFriendEvent(){
+    var addPanel = document.getElementById("addpanel");
     var aChatPanel = document.getElementsByClassName("chat-panel");
     var btn = document.getElementById("closeAddPanel");
     var addfriendBtn = document.getElementById("addfriend");
 
     if (aChatPanel.length !== 0) {
         for (var j = 0, l = aChatPanel.length; j < l; j++) {
-            aChatPanel[j].style.display = "none";
+            if(aChatPanel[j].style.display !== "none"){
+                aChatPanel[j].style.display = "none";
+            }
         }
         addPanel.style.display = "block";
     }
-
+    
+    
     btn.addEventListener("click",function(){
         addPanel.style.display = "none";
     })
 
     addfriendBtn.addEventListener("click",function(){
         var friendId = document.getElementById("friendid").value;
-        var s = '{"command":"add_friend","id":"'+id+'","friend_id":"'+friendId+'","status":"0"}';
+        var s = '{"command":"add_friend","src":"'+id+'","dst":"'+friendId+'","status":"0"}';
         console.log(s)
         websocket.send(s);
     })
@@ -90,6 +94,7 @@ function tagChange(curNode) {
 }
 
 function getFriendList() {
+    friend.innerHTML = "";
     var friendContent = friend.innerHTML;
     var s = '{"command":"list_friend","id":"' + id + '"}';
     var xml = new XMLHttpRequest();
@@ -99,7 +104,7 @@ function getFriendList() {
     xml.onreadystatechange = function () {
         if (xml.readyState === 4 && xml.status === 200) {
             var res = JSON.parse(xml.responseText);
-            //console.log(res)
+            console.log(res)
             if (res.status === "success") {
                 var friendList = res.friends;
                 for (let i = 0, len = friendList.length; i < len; i++) {
@@ -127,30 +132,34 @@ function friendAddEvent() {
             var aChatPanel = document.getElementsByClassName("chat-panel");
             if (aChatPanel.length !== 0) {
                 for (var j = 0, l = aChatPanel.length; j < l; j++) {
-                    aChatPanel[j].style.display = "none";
+                    if(aChatPanel[j].style.display !== "none"){
+                        aChatPanel[j].style.display = "none";
+                    }
                 }
             }
             var chatPanelId = document.getElementById("chatPanel" + this.id);
             if (chatPanelId) {
                 chatPanelId.style.display = "block";
                 addPanelEvent(this.id);
+
             } else {
                 oContainer.innerHTML += '<div class="chat-panel" id="chatPanel' + this.id + '"><div class="top"><div class="head-content"><header class="chat-header"><h1>' + friendUserName[this.id] + '</h1><button id="closebtn' + this.id + '" class="closebtn">关闭</button></header><div id="chat-content' + this.id + '" class="chat-content"></div></div></div><footer class="chat-footer"><input id="input' + this.id + '" class="_input" type="text" maxlength="10"><button id="sendbtn' + this.id + '" class="sendbtn">发送</button></footer></div>';
 
                 addPanelEvent(this.id);
-
+                
             }
         });
     }
 }
 
 function addPanelEvent(thisId) {
+
     var clsbtn = document.getElementById("closebtn" + thisId);
     clsbtn.onclick = function () {
         var chatPanelId = document.getElementById("chatPanel" + thisId);
         chatPanelId.style.display = "none";
     };
-
+    //add.addEventListener("click",addFriendEvent);
     var sendbtn = document.getElementById("sendbtn" + thisId);
     var input = document.getElementById("input" + thisId);
     var chatContent = document.getElementById("chat-content" + thisId);
@@ -158,20 +167,23 @@ function addPanelEvent(thisId) {
     sendbtn.onclick = function () {
         var chatLi = document.getElementById("chat-list" + thisId);
         var txt = input.value;
-        var s = '{"command":"send_message","src":"' + id + '","dst":"' + thisId + '","message":"' + txt + '"}';
-        input.value = "";
-        chatContent.innerHTML += '<div class="content"><div class="avatar"><img></div><p class="chat_nick">' + username + '</p><p class="chat_content ">' + txt + '</p></div>';
-        if (chatLi) {
-            var lastmsg = document.getElementById("lastmsg" + thisId);
-            lastmsg.innerHTML = txt;
-        } else {
-            chatUL.innerHTML += '<li id="chat-list' + thisId + '" class="chat-list-item list-item list"><div class="avatar"><img></div><p class="nick">' + friendUserName[thisId] + '</p><p id="lastmsg' + thisId + '" class="msg">' + txt + '</p></li>';
-            var chatLi = document.getElementsByClassName("chat-list-item");
-            for(var i=0,len=chatLi.length;i<len;i++){
-                addChatListEvent(chatLi[i].id)
+        if(txt !== ""){
+            var s = '{"command":"send_message","src":"' + id + '","dst":"' + thisId + '","message":"' + txt + '"}';
+            input.value = "";
+            chatContent.innerHTML += '<div class="content"><div class="avatar"><img></div><p class="chat_nick">' + username + '</p><p class="chat_content ">' + txt + '</p></div>';
+            if (chatLi) {
+                var lastmsg = document.getElementById("lastmsg" + thisId);
+                lastmsg.innerHTML = txt;
+            } else {
+                chatUL.innerHTML += '<li id="chat-list' + thisId + '" class="chat-list-item list-item list"><div class="avatar"><img></div><p class="nick">' + friendUserName[thisId] + '</p><p id="lastmsg' + thisId + '" class="msg">' + txt + '</p></li>';
+                var chatLi = document.getElementsByClassName("chat-list-item");
+                for(var i=0,len=chatLi.length;i<len;i++){
+                    addChatListEvent(chatLi[i].id);
+                }
             }
+            websocket.send(s);
         }
-        websocket.send(s);
+        
     }
 }
 
@@ -185,15 +197,19 @@ function addChatListEvent(chatLiId){
             var aChatPanel = document.getElementsByClassName("chat-panel");
             if (aChatPanel.length !== 0) {
                 for (var j = 0, l = aChatPanel.length; j < l; j++) {
-                    aChatPanel[j].style.display = "none";
+                    if(aChatPanel[j].style.display !== "none"){
+                        aChatPanel[j].style.display = "none";
+                    }
                 }
             }
             chatPanelId.style.display = "block";
             addPanelEvent(thisId);
+            
         }else{
             oContainer.innerHTML += '<div class="chat-panel" id="chatPanel' + thisId + '"><div class="top"><div class="head-content"><header class="chat-header"><h1>' + friendUserName[thisId] + '</h1><button id="closebtn' + thisId + '" class="closebtn">关闭</button></header><div id="chat-content' + thisId + '" class="chat-content"></div></div></div><footer class="chat-footer"><input id="input' + thisId + '" class="_input" type="text" maxlength="10"><button id="sendbtn' + thisId + '" class="sendbtn">发送</button></footer></div>';
 
             addPanelEvent(thisId);
+
         }
     }
 
@@ -227,12 +243,12 @@ function createWS() {
                 lastmsg.innerHTML = data.message;
                 var chatContent = document.getElementById('chat-content' + data.src);
                 if(chatContent){
-                    chatContent.innerHTML += '<div class="content"><div class="avatar"><img></div><p class="chat_nick">' + data.src + '</p><p class="chat_content ">' + data.message + '</p></div>';
+                    chatContent.innerHTML += '<div class="content"><div class="avatar"><img></div><p class="chat_nick">' + friendUserName[data.src] + '</p><p class="chat_content ">' + data.message + '</p></div>';
                 }
             } else {
                 var chatContent = document.getElementById('chat-content' + data.src);
                 if(chatContent){
-                    chatContent.innerHTML += '<div class="content"><div class="avatar"><img></div><p class="chat_nick">' + data.src + '</p><p class="chat_content ">' + data.message + '</p></div>';
+                    chatContent.innerHTML += '<div class="content"><div class="avatar"><img></div><p class="chat_nick">' + friendUserName[data.src] + '</p><p class="chat_content ">' + data.message + '</p></div>';
                     chatUL.innerHTML += '<li id="chat-list' + data.src + '" class="chat-list-item list-item list"><div class="avatar"><img></div><p class="nick">' + friendUserName[data.src] + '</p><p id="lastmsg' + data.src + '" class="msg">' + data.message + '</p></li>';
                     var chatLi = document.getElementsByClassName("chat-list-item");
                     for(var i=0,len=chatLi.length;i<len;i++){
@@ -247,7 +263,9 @@ function createWS() {
                             var aChatPanel = document.getElementsByClassName("chat-panel");
                             if (aChatPanel.length !== 0) {
                                 for (var j = 0, l = aChatPanel.length; j < l; j++) {
-                                    aChatPanel[j].style.display = "none";
+                                    if(aChatPanel[j].style.display !== "none"){
+                                        aChatPanel[j].style.display = "none";
+                                    }
                                 }
                             }
                             var thisId = this.id.split("chat-list")[1];
@@ -259,7 +277,7 @@ function createWS() {
 
                                 var chatContent = document.getElementById('chat-content' + data.src);
                                 if(chatContent){
-                                    chatContent.innerHTML += '<div class="content"><div class="avatar"><img></div><p class="chat_nick">' + data.src + '</p><p class="chat_content ">' + data.message + '</p></div>';
+                                    chatContent.innerHTML += '<div class="content"><div class="avatar"><img></div><p class="chat_nick">' + friendUserName[data.src] + '</p><p class="chat_content ">' + data.message + '</p></div>';
                                 }else{
                                     var content = "";
                                     content += '<div class="chat-panel" id="chatPanel' + thisId + '"><div class="top"><div class="head-content"><header class="chat-header"><h1>' + friendUserName[thisId] + '</h1><button id="closebtn' + thisId + '" class="closebtn">关闭</button></header><div id="chat-content' + thisId + '" class="chat-content">';
@@ -282,15 +300,26 @@ function createWS() {
                 
             }
             
-        }
-
-        if(data.command === "add_friend_return"){
-            if(data.status === "success"){
-                alert("添加成功");
-                friend.innerHTML = "";
-                getFriendList();
+        }else if(data.command === "add_friend_return"){
+            if(data.status==="success"){
+                alert("请求已发送");
             }else{
-                alert("添加失败");
+                alert("请求发送失败");
+            }
+        }else if(data.command === "add_friend_confirm_return"){
+            if(data.status==="success"){
+                getFriendList();
+            }
+        }else if(data.command === "add_friend"){
+            chatUL.innerHTML += '<li id="'+data.src+'" class="list-item list"><div class="avatar"><img></div><p class="nick">好友请求</p><p class="msg">你收到'+data.src+'的好友申请</p></li>';
+            var  apply = document.getElementById(data.src);
+            apply.onclick = function(){
+                var r=confirm("是否同意好友申请?");
+                if (r===true){
+                    var s = '{"command":"add_friend_confirm","src":"'+this.id+'","dst":"'+id+'","status":"0","message":"confirm_two_way"}';
+                    console.log(s);
+                    websocket.send(s);
+                }
             }
         }
     }

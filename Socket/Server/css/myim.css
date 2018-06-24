@@ -401,11 +401,12 @@ button{
     position: absolute;
     top:13px;
     right:20px;
-    width:22px;
+    width:40px;
     height:22px;
     line-height: 22px;
     border-radius:11px;
     font-size: 20px;
+    background: #ddf0ed;
 }
 
 #addpanel{
@@ -439,5 +440,7 @@ button{
     border-radius:5px;
     outline:0;
     padding-left:5px;
-    background: -webkit-linear-gradient(top,#5f9cc5,#396b9e);
+    text-align: center;
+    background: #495a80;
+    color:#fff;
 }

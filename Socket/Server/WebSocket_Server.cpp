@@ -27,7 +27,6 @@ extern int PushOfflineMessage(const char* id);
 
 int WS_Login(const char* JsonData, WS_Info Info)
 {
-    string id = "0";
     Document DocReceive;
     Document DocSend;
     DocSend.SetObject();
@@ -38,7 +37,7 @@ int WS_Login(const char* JsonData, WS_Info Info)
     {
         Value &vid = DocReceive["id"];
         Value &vpassword = DocReceive["password"];
-        id = vid.GetString();
+        string id = vid.GetString();
         string password = vpassword.GetString();
         string SQL = R"(select username from user where id=")" + id + R"(")" + R"(and password=")" + password + R"(";)";
 
@@ -61,6 +60,7 @@ int WS_Login(const char* JsonData, WS_Info Info)
             DocSend.AddMember("command", "login_return", DocSend.GetAllocator());
             DocSend.AddMember("status", "success", DocSend.GetAllocator());
             DocSend.AddMember("username", vUsername, DocSend.GetAllocator());
+            PushOfflineMessage(id.c_str());
         }
     }
     else
@@ -75,10 +75,6 @@ int WS_Login(const char* JsonData, WS_Info Info)
     DocSend.Accept(writer);
     string JsonSend = buffer.GetString();
     Info.server->send(Info.hdl, JsonSend.c_str(), websocketpp::frame::opcode::text);
-    if (id!="0")
-    {
-        PushOfflineMessage(id.c_str());
-    }
     return 0;
 }
 
@@ -127,7 +123,6 @@ int WS_SendMessage(const char* JsonData, WS_Info Info)
                 DocSend.AddMember("command", "send_message_return", DocSend.GetAllocator());
                 DocSend.AddMember("status", "success", DocSend.GetAllocator());
             }
-            Mtx_Unlock(mtx_Map_WS_User);
         }
         else  //未登录
         {
@@ -135,7 +130,7 @@ int WS_SendMessage(const char* JsonData, WS_Info Info)
             DocSend.AddMember("status", "fail", DocSend.GetAllocator());
             DocSend.AddMember("detail", "not logged in", DocSend.GetAllocator());
         }
-
+        Mtx_Unlock(mtx_Map_WS_User);
     }
     else  //json错误
     {
@@ -162,17 +157,23 @@ void OnClose(WebsocketServer *server, websocketpp::connection_hdl hdl)
 {
     unordered_map<string, WS_Info>::iterator it;
     Mtx_Lock(mtx_Map_WS_User);
-    for (it = Map_WS_User.begin(); it != Map_WS_User.end();)
+    if (Map_WS_User.size()!=0)
+    {
+        for (it = Map_WS_User.begin(); it != Map_WS_User.end();)
+        {
+            if (server->get_con_from_hdl(it->second.hdl) == server->get_con_from_hdl(hdl))
+            {
+                Map_WS_User.erase(it++);
+            }
+            else
+            {
+                it++;
+            }
+        }
+    }
+    else  //空的map
     {
 
-        if (server->get_con_from_hdl(it->second.hdl) == server->get_con_from_hdl(hdl))
-        {
-            Map_WS_User.erase(it++);
-        }
-        else
-        {
-            it++;
-        }
     }
     Mtx_Unlock(mtx_Map_WS_User);
     cout << "Web client disconnected" << endl;
@@ -350,7 +351,6 @@ int WS_AddFriend(const char* JsonData, WS_Info Info)
                 DocSend.AddMember("status", "fail", DocSend.GetAllocator());
                 DocSend.AddMember("datail", "not logged in or using different socket", DocSend.GetAllocator());
             }
-            Mtx_Unlock(mtx_Map_WS_User);
         }
         else  //未登录
         {
@@ -358,6 +358,7 @@ int WS_AddFriend(const char* JsonData, WS_Info Info)
             DocSend.AddMember("status", "fail", DocSend.GetAllocator());
             DocSend.AddMember("datail", "not logged in", DocSend.GetAllocator());
         }
+        Mtx_Unlock(mtx_Map_WS_User);
     }
     else //json包错误
     {
@@ -468,7 +469,6 @@ int WS_AddFriendConfirm(const char* JsonData, WS_Info Info)  //此函数中dst�
                 DocSend.AddMember("status", "fail", DocSend.GetAllocator());
                 DocSend.AddMember("datail", "not logged in or using different socket", DocSend.GetAllocator());
             }
-            Mtx_Unlock(mtx_Map_WS_User);
         }
         else  //未登录
         {
@@ -476,6 +476,7 @@ int WS_AddFriendConfirm(const char* JsonData, WS_Info Info)  //此函数中dst�
             DocSend.AddMember("status", "fail", DocSend.GetAllocator());
             DocSend.AddMember("datail", "not logged in", DocSend.GetAllocator());
         }
+        Mtx_Unlock(mtx_Map_WS_User);
     }
     else //json包错误
     {

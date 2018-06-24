@@ -129,17 +129,26 @@ int Receiver(SOCKET sClient)
             cout << "Android client disconnected" << endl;
             //从map中删除
             unordered_map<string, SOCKET>::iterator it;
-            for (it = Map_User.begin(); it != Map_User.end(); )
+            Mtx_Lock(mtx_Map_User);
+            if (Map_User.size()!=0)  //防止使用空的map
             {
-                if (it->second == sClient)
+                for (it = Map_User.begin(); it != Map_User.end(); )
                 {
-                    Map_User.erase(it++);
-                }
-                else
-                {
-                    it++;
+                    if (it->second == sClient)
+                    {
+                        Map_User.erase(it++);
+                    }
+                    else
+                    {
+                        it++;
+                    }
                 }
             }
+            else  //map为空
+            {
+
+            }
+            Mtx_Unlock(mtx_Map_User);
             Sock.Close(sClient);
             return -1;
         }
@@ -223,7 +232,7 @@ int main()
         return -1;
     }
 
-    if (Conn.Connect("192.168.1.2", "root", "admin", "myim", 3306) != 0)
+    if (Conn.Connect("127.0.0.1", "root", "admin", "myim", 3306) != 0)
     {
         cout << "Database connect failed" << endl;
         return -1;

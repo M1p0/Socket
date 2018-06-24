@@ -92,7 +92,6 @@ int AddFriendConfirm(const char* JsonData, SOCKET sClient)  //此函数中dst为
                                 {
 
                                 }
-
                             }
                             else  //伪造的confirm包
                             {
@@ -113,7 +112,6 @@ int AddFriendConfirm(const char* JsonData, SOCKET sClient)  //此函数中dst为
                     }
                     
                 }
-                Mtx_Unlock(mtx_Map_User);
             }
             else  //用户与socket不匹配
             {
@@ -128,6 +126,7 @@ int AddFriendConfirm(const char* JsonData, SOCKET sClient)  //此函数中dst为
             DocSend.AddMember("status", "fail", DocSend.GetAllocator());
             DocSend.AddMember("datail", "not logged in", DocSend.GetAllocator());
         }
+        Mtx_Unlock(mtx_Map_User);
     }
     else //json包错误
     {
@@ -245,7 +244,6 @@ int AddFriend(const char* JsonData, SOCKET sClient)
                 DocSend.AddMember("status", "fail", DocSend.GetAllocator());
                 DocSend.AddMember("datail", "not logged in or using different socket", DocSend.GetAllocator());
             }
-            Mtx_Unlock(mtx_Map_User);
         }
         else  //未登录
         {
@@ -253,6 +251,7 @@ int AddFriend(const char* JsonData, SOCKET sClient)
             DocSend.AddMember("status", "fail", DocSend.GetAllocator());
             DocSend.AddMember("datail", "not logged in", DocSend.GetAllocator());
         }
+        Mtx_Unlock(mtx_Map_User);
     }
     else //json包错误
     {
@@ -376,7 +375,6 @@ int Logon(const char* JsonData, SOCKET sClient)
 
 int Login(const char* JsonData, SOCKET sClient)
 {
-    string id = "0";
     Document DocReceive;
     Document DocSend;
     DocSend.SetObject();
@@ -386,7 +384,7 @@ int Login(const char* JsonData, SOCKET sClient)
     {
         Value &vid = DocReceive["id"];
         Value &vpassword = DocReceive["password"];
-        id = vid.GetString();
+        string id = vid.GetString();
         string password = vpassword.GetString();
         string SQL = R"(select username from user where id=")" + id + R"(")" + R"(and password=")" + password + R"(";)";
 
@@ -408,6 +406,7 @@ int Login(const char* JsonData, SOCKET sClient)
             Map_User.insert(pair<string, SOCKET>(id, sClient));
             Mtx_Unlock(mtx_Map_User);
             MSleep(10, "ms");
+            PushOfflineMessage(id.c_str());
 
         }
     }
@@ -426,10 +425,6 @@ int Login(const char* JsonData, SOCKET sClient)
     Packet_Send.Length = JsonSend.size();
     memcpy(Packet_Send.Data, JsonSend.c_str(), JsonSend.size());
     Sock.Send(sClient, (char*)&Packet_Send, JsonSend.size() + 4);
-    if (id != "0")
-    {
-        PushOfflineMessage(id.c_str());
-    }
     return 0;
 
 }
@@ -445,24 +440,31 @@ int Logout(const char* JsonData, SOCKET sClient)
         Value &vid = DocReceive["id"];
         string id = vid.GetString();
         unordered_map<string, SOCKET>::iterator it;
+        Mtx_Lock(mtx_Map_User);
         it = Map_User.find(id);
-        if (it->second == sClient)
+        if (it!=Map_User.end())
         {
-            Mtx_Lock(mtx_Map_User);
-            Map_User.erase(it++);
-            Mtx_Unlock(mtx_Map_User);
-            Sock.Close(sClient);
-            return 0;
+            if (it->second == sClient)
+            {
+                Map_User.erase(it++);
+                Sock.Close(sClient);
+            }
+            else   //理论上不用管
+            {
+
+            }
         }
-        else   //理论上不用管
+        else   //用户并没有登陆
         {
-            return -1;
+
         }
+        Mtx_Unlock(mtx_Map_User);
     }
     else
     {
-        return -1;
+
     }
+    return 0;
 
 }
 
