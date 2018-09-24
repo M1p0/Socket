@@ -4,6 +4,7 @@
 #include <string.h>
 #include <thread>
 #include <chrono>
+#include <random>
 using namespace std;
 
 #ifdef _WIN32
@@ -28,7 +29,7 @@ T MAX(T num1, T num2)
 template <class T>
 int Match(T data, T array[], int length)   //string not included
 {
-    for (int i = 0; i < length; i++)
+    for (int i = 0; i <=length; i++)
     {
         if (array[i] == data)
         {
@@ -59,4 +60,14 @@ inline void MSleep(long long t,const char* unit)
     }
     else
         cout << "wrong unit" << endl;
+}
+
+
+inline int Random(int min, int max)
+{
+    std::random_device rd;
+    std::default_random_engine engine(rd());
+    std::uniform_int_distribution<> dis(min, max);
+    auto dice = std::bind(dis, engine);
+    return dice();
 }

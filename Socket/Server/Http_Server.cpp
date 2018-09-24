@@ -72,7 +72,6 @@ void MyHttpServerHandler(struct evhttp_request* req, void* arg)
             char input_data[BUF_SIZE];
             memset(input_data, 0, BUF_SIZE);
             memcpy(input_data, ev_input_data, ev_input_data_length);
-
             Document document;
             Document DocSend;
             DocSend.SetObject();

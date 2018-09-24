@@ -1,0 +1,175 @@
+Package
+{
+    int Length;
+    char Data[BUF_SIZE];
+}
+BUF_SIZE最大值为2048
+
+**********************Data部分**********************
+
+**********************Logon************************
+Client:
+{
+    "command":"logon",
+    "username":"xxxxx",
+    "password":"xxxxx"
+}
+
+Server:
+{
+    "command":"logon_return",
+    "status":"success",
+    "id":"xxxxxx"
+}
+
+Server:
+{
+    "command":"logon_return",
+    "status":"fail",
+    "detail":"xxxxx"
+}
+
+
+**********************Login************************
+Client:                 //websocket每次建立连接都必须Login(通过websocket发送login包)
+{
+    "command":"login",
+    "id":"xxxxx",
+    "password":"xxxxx"
+}
+
+{
+    "command":"login",
+    "id":"10000",
+    "password":"password"
+}
+
+Server:
+{
+    "command":"login_return",
+    "status":"success",
+    "username":"xxxxxxxx"
+}
+{
+    "command":"login_return",
+    "status":"fail",
+    "detail":"xxxxxxx"
+}
+
+**********************Logout************************
+Client:
+{
+    "command":"logout",
+    "id":"xxxxx"
+}
+
+
+**********************AddFriend************************
+A添加B为好友
+src始终为A的id
+dst始终未B的id
+
+Client A:
+{
+    "command":"add_friend",
+    "src":"xxxxx",
+    "dst":"xxxxx",
+    "status":"xxxxx"   //0普通好友 1特别关注
+}
+Server回复A:
+{
+    "command":"add_friend_return",
+    "status":"success",
+}
+Server发给B
+{
+    "command":"add_friend",
+    "src":"xxxxx",
+    "dst":"xxxxx",
+    "status":"xxxxx"   //0普通好友 1特别关注
+    "message":"confirm_one_way"
+}
+
+B回复Server  //确认添加好友
+{
+    "command":"add_friend_confirm",
+    "src":"xxxxx",
+    "dst":"xxxxx",
+    "status":"xxxxx",   //0普通好友 1特别关注
+    "message":"confirm_two_way"
+}
+
+Server回复A,B
+{
+    "command":"add_friend_confirm_return",
+    "status":"success"
+}
+
+
+
+**********************ListFriend************************
+Client:
+{
+    "command":"list_friend",
+    "id":"xxxxx"
+}
+
+Server:
+{
+    "command":"list_friend_return",
+    "id":"xxxxxx",
+    "status":"success",
+    "friends":[
+        {
+            "id":"xxxx",
+            "username":"xxxxx",
+            status:"xxx"
+        },
+        {
+            "id":"xxxx",
+            "username":"xxxxx",
+            status:"xxx"
+        }
+    ]
+}
+
+
+{
+    "command":"list_friend_return",
+    "status":"fail",
+    "detail":"xxxxx"
+}
+
+
+**********************SendMessage************************
+Client:
+{
+    "command":"send_message",
+    "src":"xxxxx",                       //src为id
+    "dst":"xxxxxx",                     //dst为friend_id
+    "message":"xxxxxxxx"
+}
+
+Server:
+//发送方就收到的返回包
+{
+    "command":"send_message_return",
+    "status":"success"
+}
+
+
+{
+    "command":"send_message_return",
+    "status":"fail",
+    "detail":"xxxxxxx"
+}
+
+//接收方收到的包
+{
+    "command":"send_message",
+    "src":"xxxxx",                       //src为friend_id
+    "dst":"xxxxxx",                     //dst为id
+    "message":"xxxxxxxx"
+}
+
+****************************************************
