@@ -118,7 +118,7 @@ int Receiver(SOCKET sClient)
 
         retVal = Sock.Recv(sClient, (char*)buf, Length);
         printf("Raw_Data:");
-        for (int i = 0; i < Length; i++)
+        for (int i = 0; i < retVal; i++)
         {
             printf("0x%02x ", buf[i]);
         }

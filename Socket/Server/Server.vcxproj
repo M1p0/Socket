@@ -74,8 +74,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>..\Lib\MyLib\include\;..\Lib\rapidjson\;..\Lib\MySQL\include\;..\Lib\libevent\;C:\Program Files\boost_1_65_0\;..\Lib\websocketpp\;$(IncludePath)</IncludePath>
-    <LibraryPath>..\Lib\MyLib\lib\Debug\;C:\Program Files\boost_1_65_0\stage\lib\;..\Lib\MySQL\bin\lib\;..\Lib\libevent\lib\;$(LibraryPath)</LibraryPath>
+    <IncludePath>..\Lib\MyLib\include\;..\Lib\rapidjson\;..\Lib\MySQL\include\;..\Lib\libevent\;..\Lib\websocketpp\;$(IncludePath)</IncludePath>
+    <LibraryPath>..\Lib\MyLib\lib\Debug\;..\Lib\MySQL\bin\lib\;..\Lib\libevent\lib\;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
