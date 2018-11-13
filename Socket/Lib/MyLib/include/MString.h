@@ -7,3 +7,5 @@ void transfer(std::string &str, int mode); //mode function
                                       //2    tolower
 
 void deleteAllMark(std::string &s, const std::string &mark);
+
+char* Mitoa(int value, char* result, int base);

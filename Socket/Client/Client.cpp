@@ -109,7 +109,7 @@ int main()
         Packet_Send.Length = command.size();
         memcpy(Packet_Send.Data, command.c_str(), command.size());
         retVal = Sock.Send(sHost, (char*)&Packet_Send, command.size() + 4);
-        if (SOCKET_ERROR == retVal)
+        if (retVal<=0)
         {
             cout << "send failed!" << endl;
             return -1;

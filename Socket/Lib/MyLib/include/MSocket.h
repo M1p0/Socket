@@ -10,6 +10,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <winsock2.h>
+#include <ws2tcpip.h>
 #pragma comment(lib,"Ws2_32.lib")
 
 #else
@@ -18,6 +19,8 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <netdb.h>
+#include <string.h>
 #define SOCKET int
 #endif 
 
@@ -49,6 +52,7 @@ public:
     int Close(SOCKET s);
     SOCKET Accept(SOCKET s);
     int Getpeername(SOCKET Client, Cli_Info &CInfo);
+    int GetHostByName(const char* HostName, char* HostIP, int Size);
 private:
 #ifdef _WIN32
     WSADATA wsd;
